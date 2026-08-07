@@ -134,7 +134,10 @@ export const Settings: React.FC<SettingsProps> = ({ settings, saveSettings }) =>
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
         }, 100);
-        showToast("Backup downloaded successfully!", "success");
+        const scheduleCount = backup.data.assignments.length;
+        const speakerCount = backup.data.speakers.length;
+        const roleCount = backup.data.roles.length;
+        showToast(`Backup downloaded! Includes ${scheduleCount} schedules, ${speakerCount} brothers, ${roleCount} roles & settings.`, "success");
     } catch (e) {
         console.error("Backup failed", e);
         showToast("Failed to create backup.", "error");
@@ -159,10 +162,12 @@ export const Settings: React.FC<SettingsProps> = ({ settings, saveSettings }) =>
             if (typeof result !== 'string') throw new Error("File read error");
             
             const json = JSON.parse(result);
-            const success = await DataService.restoreBackup(json);
-            if (success) {
-                showToast("Backup restored successfully! Application reloading...", "success");
-                setTimeout(() => window.location.reload(), 1500);
+            const res = await DataService.restoreBackup(json);
+            if (res.success && res.counts) {
+                const { assignments, speakers, roles, hasAuthorityRoles } = res.counts;
+                const authMsg = hasAuthorityRoles ? "Authority Roles Set" : "No Authority Roles";
+                showToast(`Restored: ${assignments} Schedules, ${speakers} Brothers, ${roles} Roles (${authMsg}). Reloading...`, "success");
+                setTimeout(() => window.location.reload(), 1800);
             } else {
                 showToast("Failed to restore backup. Invalid file format.", "error");
             }

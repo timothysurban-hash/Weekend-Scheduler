@@ -183,18 +183,19 @@ export const DataService = {
     const outlines = await DataService.getOutlines();
     const speakers = await DataService.getSpeakers();
     const assignments = await DataService.getAssignments();
+    const roles = await DataService.getRoles();
 
     return {
         timestamp: new Date().toISOString(),
-        version: '1.0',
-        data: { settings, outlines, speakers, assignments }
+        version: '1.1',
+        data: { settings, outlines, speakers, assignments, roles }
     };
   },
 
-  restoreBackup: async (backup: any) => {
+  restoreBackup: async (backup: any): Promise<{ success: boolean; counts?: { assignments: number; speakers: number; roles: number; hasAuthorityRoles: boolean } }> => {
       try {
           if (!backup || !backup.data) throw new Error("Invalid backup format");
-          const { settings, outlines, speakers, assignments } = backup.data;
+          const { settings, outlines, speakers, assignments, roles } = backup.data;
           
           if (!settings || typeof settings !== 'object') throw new Error("Missing Settings data");
           if (!Array.isArray(outlines)) throw new Error("Missing Outlines data");
@@ -222,11 +223,27 @@ export const DataService = {
           
           const validAssignments = assignments.filter(isValidAssignment);
           await db.put(STORE_NAME, validAssignments, IDB_KEYS.ASSIGNMENTS);
-          
-          return true;
+
+          const rolesToSave = Array.isArray(roles) && roles.length > 0 ? roles : DEFAULT_ROLES;
+          await db.put(STORE_NAME, rolesToSave, IDB_KEYS.ROLES);
+
+          const hasAuthorityRoles = Boolean(
+            settings.authorityRoles && 
+            (settings.authorityRoles.conductorId || settings.authorityRoles.auditoriumAttendantId)
+          );
+
+          return {
+            success: true,
+            counts: {
+              assignments: validAssignments.length,
+              speakers: validSpeakers.length,
+              roles: rolesToSave.length,
+              hasAuthorityRoles
+            }
+          };
       } catch (e) {
           console.error("Restore failed", e);
-          return false;
+          return { success: false };
       }
   }
 };
