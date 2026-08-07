@@ -78,7 +78,7 @@ export const Settings: React.FC<SettingsProps> = ({ settings, saveSettings }) =>
         parsedSpeakers.push({
           id: Math.random().toString(36).substr(2, 9),
           name: cleanName,
-          congregation: 'Green Heights',
+          congregation: localSettings.congregationName || settings.congregationName || 'Green Heights',
           isGuest: false,
           unavailableDates: [],
           lastAssigned: null,

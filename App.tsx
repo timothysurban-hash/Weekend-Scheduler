@@ -73,6 +73,17 @@ function App() {
   const handleUpdateSettings = (newSettings: AppSettings) => {
     setSettings(newSettings);
     DataService.saveSettings(newSettings);
+
+    const newCongName = newSettings.congregationName?.trim();
+    if (newCongName && newCongName !== settings.congregationName) {
+      setSpeakers(prevSpeakers => {
+        const updated = prevSpeakers.map(sp => 
+          sp.isGuest ? sp : { ...sp, congregation: newCongName }
+        );
+        DataService.saveSpeakers(updated);
+        return updated;
+      });
+    }
   };
 
   const getViewTitle = () => {
@@ -128,6 +139,7 @@ function App() {
                   outlines={outlines}
                   updateSpeakers={handleUpdateSpeakers}
                   assignments={assignments}
+                  defaultCongregation={settings.congregationName}
                 />
               )}
               {currentView === 'roles' && (

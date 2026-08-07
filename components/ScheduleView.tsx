@@ -537,12 +537,14 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
 
   const getBrotherCandidateOptions = (role: DutyRole, dateStr: string, currentSelectedId?: string | null) => {
     const targetDate = new Date(dateStr).getTime();
-    const localBrothers = speakers.filter(s => !s.isGuest);
+    const eligibleBrothers = speakers.filter(s => !s.isGuest || s.id === currentSelectedId || role === 'speaker');
     
-    const candidateOptions = localBrothers
+    const candidateOptions = eligibleBrothers
       .filter(s => {
+        if (s.id === currentSelectedId) return true;
+        if (s.isGuest && role === 'speaker') return true;
         const quals = s.qualifications || ['speaker', 'chairman', 'reader', 'mic', 'attendant_entrance', 'attendant_auditorium'];
-        return quals.includes(role) || s.id === currentSelectedId;
+        return quals.includes(role);
       })
       .map(s => {
         let lastDate: number | null = null;
@@ -566,7 +568,10 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
         let statusLabel = 'Available';
         let status: 'success' | 'warning' | 'neutral' = 'success';
 
-        if (lastDate) {
+        if (s.isGuest) {
+          statusLabel = 'Guest Speaker';
+          status = 'neutral';
+        } else if (lastDate) {
           const weeks = Math.round((targetDate - lastDate) / (1000 * 60 * 60 * 24 * 7));
           if (weeks === 0) {
             statusLabel = 'Assigned today';
@@ -586,7 +591,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
         return {
           value: s.id,
           label: s.name,
-          subLabel: s.congregation,
+          subLabel: s.isGuest ? `Guest • ${s.congregation}` : s.congregation,
           statusLabel,
           status
         };

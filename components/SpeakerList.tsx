@@ -14,6 +14,7 @@ interface SpeakerListProps {
   outlines: Outline[];
   updateSpeakers: (s: Speaker[]) => void;
   assignments: Assignment[];
+  defaultCongregation?: string;
 }
 
 const ALL_ROLES: { id: DutyRole; label: string; shortLabel: string; color: string }[] = [
@@ -41,7 +42,8 @@ const SPIRITUAL_STATUS_OPTIONS: { id: SpiritualStatus; label: string }[] = [
   { id: 'up', label: 'Unbaptized Publisher (UP)' }
 ];
 
-export const SpeakerList: React.FC<SpeakerListProps> = ({ speakers, outlines: _outlines, updateSpeakers, assignments }) => {
+export const SpeakerList: React.FC<SpeakerListProps> = ({ speakers, outlines: _outlines, updateSpeakers, assignments, defaultCongregation }) => {
+  const defaultCongName = defaultCongregation || 'Green Heights';
   const [isAdding, setIsAdding] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'elder' | 'ms' | 'publisher' | 'up'>('all');
@@ -96,11 +98,18 @@ export const SpeakerList: React.FC<SpeakerListProps> = ({ speakers, outlines: _o
     qualifications: DutyRole[];
   }>({
     name: '',
-    congregation: 'Green Heights',
+    congregation: defaultCongName,
     isGuest: false,
     spiritualStatus: 'publisher',
     qualifications: getDefaultQualificationsForStatus('publisher')
   });
+
+  useEffect(() => {
+    setNewSpeaker(prev => ({
+      ...prev,
+      congregation: prev.congregation === 'Green Heights' || !prev.congregation ? defaultCongName : prev.congregation
+    }));
+  }, [defaultCongName]);
 
   // Calculate the effective last date and whether it was a hosting duty
   const getLastAssignmentInfo = (speaker: Speaker) => {
@@ -143,7 +152,7 @@ export const SpeakerList: React.FC<SpeakerListProps> = ({ speakers, outlines: _o
     const speaker: Speaker = {
         id: Math.random().toString(36).substr(2, 9),
         name: newSpeaker.name,
-        congregation: newSpeaker.congregation || 'Green Heights',
+        congregation: newSpeaker.congregation || defaultCongName,
         isGuest: newSpeaker.isGuest || false,
         unavailableDates: [],
         lastAssigned: null,
@@ -153,7 +162,7 @@ export const SpeakerList: React.FC<SpeakerListProps> = ({ speakers, outlines: _o
     };
     updateSpeakers([...speakers, speaker]);
     setIsAdding(false);
-    setNewSpeaker({ name: '', congregation: 'Green Heights', isGuest: false, spiritualStatus: 'publisher', qualifications: getDefaultQualificationsForStatus('publisher') });
+    setNewSpeaker({ name: '', congregation: defaultCongName, isGuest: false, spiritualStatus: 'publisher', qualifications: getDefaultQualificationsForStatus('publisher') });
   };
 
   const handleNewStatusChange = (status: SpiritualStatus) => {
