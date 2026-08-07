@@ -47,38 +47,39 @@ export const ToastContainer: React.FC = () => {
   if (toasts.length === 0) return null;
 
   return (
-    <div className="fixed bottom-6 right-6 z-[200] flex flex-col space-y-2 max-w-sm w-full px-4 pointer-events-none">
+    <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-[200] flex flex-col space-y-3 max-w-lg w-full px-4 pointer-events-none">
       {toasts.map(toast => {
         return (
           <div
             key={toast.id}
-            className="pointer-events-auto flex items-center justify-between p-3.5 bg-slate-900 text-white rounded-2xl shadow-xl border border-slate-800 animate-in fade-in slide-in-from-bottom-5 duration-200 text-xs font-medium"
+            className="pointer-events-auto flex items-center justify-between p-4 sm:p-4.5 bg-zinc-950/95 dark:bg-zinc-900/95 text-white dark:text-slate-100 rounded-2xl shadow-2xl border border-zinc-800 dark:border-zinc-700 backdrop-blur-md animate-in fade-in slide-in-from-bottom-5 duration-200 gap-3"
           >
-            <div className="flex items-center space-x-2.5 min-w-0 pr-2">
-              {toast.type === 'success' && <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />}
-              {toast.type === 'error' && <AlertCircle className="w-4 h-4 text-rose-400 flex-shrink-0" />}
-              {toast.type === 'info' && <Info className="w-4 h-4 text-sky-400 flex-shrink-0" />}
-              <span className="truncate">{toast.message}</span>
+            <div className="flex items-center space-x-3 min-w-0 pr-2">
+              {toast.type === 'success' && <CheckCircle2 className="w-5 h-5 text-emerald-400 flex-shrink-0" />}
+              {toast.type === 'error' && <AlertCircle className="w-5 h-5 text-rose-400 flex-shrink-0" />}
+              {toast.type === 'info' && <Info className="w-5 h-5 text-sky-400 flex-shrink-0" />}
+              <span className="text-sm font-extrabold leading-snug">{toast.message}</span>
             </div>
 
-            <div className="flex items-center space-x-2 flex-shrink-0">
+            <div className="flex items-center space-x-2.5 flex-shrink-0">
               {toast.onUndo && (
                 <button
                   onClick={() => {
                     toast.onUndo?.();
                     removeToast(toast.id);
                   }}
-                  className="flex items-center gap-1 px-2.5 py-1 bg-violet-600 hover:bg-violet-500 text-white rounded-lg font-bold text-[11px] transition shadow-sm cursor-pointer"
+                  className="flex items-center gap-1.5 px-3.5 py-1.5 bg-zinc-900 dark:bg-white text-white dark:text-zinc-950 hover:bg-black dark:hover:bg-slate-100 border border-zinc-700 dark:border-zinc-200 rounded-xl font-black text-xs transition shadow-md active:scale-95 cursor-pointer whitespace-nowrap"
                 >
-                  <Undo2 className="w-3 h-3" />
+                  <Undo2 className="w-3.5 h-3.5" />
                   Undo
                 </button>
               )}
               <button
                 onClick={() => removeToast(toast.id)}
-                className="p-1 text-slate-400 hover:text-white transition rounded-md cursor-pointer"
+                className="p-1.5 text-slate-400 hover:text-white hover:bg-white/10 transition rounded-xl cursor-pointer"
+                title="Close"
               >
-                <X className="w-3.5 h-3.5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
           </div>

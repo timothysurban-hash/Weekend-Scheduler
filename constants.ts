@@ -225,136 +225,39 @@ export const INITIAL_OUTLINES: Outline[] = [
 ];
 
 export const INITIAL_SPEAKERS: Speaker[] = [
-  { 
-    id: 'sp-1', 
-    name: 'Arceta, John Daryl', 
-    congregation: 'Green Heights', 
-    isGuest: false, 
-    unavailableDates: [], 
-    lastAssigned: "2024-08-09",
-    sortOrder: 0,
-    qualifications: ['attendant_entrance', 'reader', 'mic'],
-    customTags: ['MS']
-  },
-  { 
-    id: 'sp-2', 
-    name: 'Tabernilla, Melchor', 
-    congregation: 'Green Heights', 
-    isGuest: false, 
-    unavailableDates: [], 
-    lastAssigned: "2024-08-09",
-    sortOrder: 1,
-    qualifications: ['attendant_auditorium', 'speaker', 'mic'],
-    customTags: ['Elder']
-  },
-  { 
-    id: 'sp-3', 
-    name: 'Jaballa, Jaymar', 
-    congregation: 'Green Heights', 
-    isGuest: false, 
-    unavailableDates: [], 
-    lastAssigned: "2024-08-09",
-    sortOrder: 2,
-    qualifications: ['chairman', 'attendant_entrance', 'mic'],
-    customTags: ['Elder']
-  },
-  { 
-    id: 'sp-4', 
-    name: 'Surban, Timothy James', 
-    congregation: 'Green Heights', 
-    isGuest: false, 
-    unavailableDates: [], 
-    lastAssigned: "2024-08-09",
-    sortOrder: 3,
-    qualifications: ['speaker', 'chairman', 'mic'],
-    customTags: ['Elder']
-  },
-  { 
-    id: 'sp-5', 
-    name: 'Jaballa, Celito Jr.', 
-    congregation: 'Green Heights', 
-    isGuest: false, 
-    unavailableDates: [], 
-    lastAssigned: "2024-08-09",
-    sortOrder: 4,
-    qualifications: ['conductor'],
-    customTags: ['Elder']
-  },
-  { 
-    id: 'sp-6', 
-    name: 'Jaballa, Jim Harold', 
-    congregation: 'Green Heights', 
-    isGuest: false, 
-    unavailableDates: [], 
-    lastAssigned: "2024-08-09",
-    sortOrder: 5,
-    qualifications: ['reader', 'speaker', 'attendant_entrance'],
-    customTags: ['MS']
-  },
-  { 
-    id: 'sp-7', 
-    name: 'Surban, Camilo', 
-    congregation: 'Green Heights', 
-    isGuest: false, 
-    unavailableDates: [], 
-    lastAssigned: "2024-08-09",
-    sortOrder: 6,
-    qualifications: ['mic', 'chairman'],
-    customTags: ['Elder']
-  },
-  { 
-    id: 'sp-8', 
-    name: 'Fuentes, Adiel', 
-    congregation: 'Green Heights', 
-    isGuest: false, 
-    unavailableDates: [], 
-    lastAssigned: "2024-08-09",
-    sortOrder: 7,
-    qualifications: ['mic'],
-    customTags: ['MS']
-  },
-  { 
-    id: 'sp-9', 
-    name: 'Reyes, Franz Darren', 
-    congregation: 'Green Heights', 
-    isGuest: false, 
-    unavailableDates: [], 
-    lastAssigned: "2024-08-16",
-    sortOrder: 8,
-    qualifications: ['speaker', 'attendant_entrance', 'reader'],
-    customTags: ['MS']
-  },
-  { 
-    id: 'sp-10', 
-    name: 'Lavado, Joel', 
-    congregation: 'Green Heights', 
-    isGuest: false, 
-    unavailableDates: [], 
-    lastAssigned: "2024-08-16",
-    sortOrder: 9,
-    qualifications: ['reader', 'mic'],
-    customTags: ['MS']
-  },
-  { 
-    id: 'sp-11', 
-    name: 'Cañete, John Mark', 
-    congregation: 'Green Heights', 
-    isGuest: false, 
-    unavailableDates: [], 
-    lastAssigned: "2024-08-16",
-    sortOrder: 10,
-    qualifications: ['mic'],
-    customTags: ['MS']
-  },
-  { 
-    id: 'sp-12', 
-    name: 'Asilo, Eduardo', 
-    congregation: 'Green Heights', 
-    isGuest: false, 
-    unavailableDates: [], 
-    lastAssigned: "2024-08-30",
-    sortOrder: 11,
-    qualifications: ['chairman'],
-    customTags: ['Elder']
-  }
+  // Group 1
+  { id: 'sp-1', name: 'Surban, James', congregation: 'Green Heights', isGuest: false, unavailableDates: [], lastAssigned: null, sortOrder: 0, spiritualStatus: 'elder', qualifications: ['chairman', 'speaker', 'conductor', 'reader', 'attendant_entrance', 'attendant_auditorium', 'mic'] },
+  { id: 'sp-2', name: 'Lavado, Joel', congregation: 'Green Heights', isGuest: false, unavailableDates: [], lastAssigned: null, sortOrder: 1, spiritualStatus: 'elder', qualifications: ['chairman', 'speaker', 'conductor', 'reader', 'attendant_entrance', 'attendant_auditorium', 'mic'] },
+  { id: 'sp-3', name: 'Dayanan, Jhon Mark', congregation: 'Green Heights', isGuest: false, unavailableDates: [], lastAssigned: null, sortOrder: 2, spiritualStatus: 'publisher', qualifications: ['attendant_entrance', 'attendant_auditorium', 'mic'] },
+  { id: 'sp-4', name: 'De Luna, Jay Rommel', congregation: 'Green Heights', isGuest: false, unavailableDates: [], lastAssigned: null, sortOrder: 3, spiritualStatus: 'publisher', qualifications: ['attendant_entrance', 'attendant_auditorium', 'mic'] },
+  { id: 'sp-5', name: 'Jaballa, Jaymar', congregation: 'Green Heights', isGuest: false, unavailableDates: [], lastAssigned: null, sortOrder: 4, spiritualStatus: 'ms', qualifications: ['chairman', 'reader', 'speaker', 'attendant_entrance', 'attendant_auditorium', 'mic'] },
+  { id: 'sp-6', name: 'Yago, Charlie', congregation: 'Green Heights', isGuest: false, unavailableDates: [], lastAssigned: null, sortOrder: 5, spiritualStatus: 'publisher', qualifications: ['attendant_entrance', 'attendant_auditorium', 'mic'] },
+  { id: 'sp-7', name: 'Yago, Alexis James', congregation: 'Green Heights', isGuest: false, unavailableDates: [], lastAssigned: null, sortOrder: 6, spiritualStatus: 'up', qualifications: ['mic'] },
+
+  // Group 2
+  { id: 'sp-8', name: 'Perez, John Mark', congregation: 'Green Heights', isGuest: false, unavailableDates: [], lastAssigned: null, sortOrder: 7, spiritualStatus: 'elder', qualifications: ['chairman', 'speaker', 'conductor', 'reader', 'attendant_entrance', 'attendant_auditorium', 'mic'] },
+  { id: 'sp-9', name: 'Tabernilla, Melchor', congregation: 'Green Heights', isGuest: false, unavailableDates: [], lastAssigned: null, sortOrder: 8, spiritualStatus: 'elder', qualifications: ['chairman', 'speaker', 'conductor', 'reader', 'attendant_entrance', 'attendant_auditorium', 'mic'] },
+  { id: 'sp-10', name: 'Bongao, Jayson', congregation: 'Green Heights', isGuest: false, unavailableDates: [], lastAssigned: null, sortOrder: 9, spiritualStatus: 'publisher', qualifications: ['attendant_entrance', 'attendant_auditorium', 'mic'] },
+  { id: 'sp-11', name: 'Cañete, John Mark', congregation: 'Green Heights', isGuest: false, unavailableDates: [], lastAssigned: null, sortOrder: 10, spiritualStatus: 'publisher', qualifications: ['attendant_entrance', 'attendant_auditorium', 'mic'] },
+  { id: 'sp-12', name: 'Gaela, Benson', congregation: 'Green Heights', isGuest: false, unavailableDates: [], lastAssigned: null, sortOrder: 11, spiritualStatus: 'publisher', qualifications: ['attendant_entrance', 'attendant_auditorium', 'mic'] },
+  { id: 'sp-13', name: 'Gaela, Iers', congregation: 'Green Heights', isGuest: false, unavailableDates: [], lastAssigned: null, sortOrder: 12, spiritualStatus: 'publisher', qualifications: ['attendant_entrance', 'attendant_auditorium', 'mic'] },
+  { id: 'sp-14', name: 'Panganiban, Constancio', congregation: 'Green Heights', isGuest: false, unavailableDates: [], lastAssigned: null, sortOrder: 13, spiritualStatus: 'publisher', qualifications: ['attendant_entrance', 'attendant_auditorium', 'mic'] },
+
+  // Group 3
+  { id: 'sp-15', name: 'Surban, Camilo', congregation: 'Green Heights', isGuest: false, unavailableDates: [], lastAssigned: null, sortOrder: 14, spiritualStatus: 'elder', qualifications: ['chairman', 'speaker', 'conductor', 'reader', 'attendant_entrance', 'attendant_auditorium', 'mic'] },
+  { id: 'sp-16', name: 'Asilo, Eduardo', congregation: 'Green Heights', isGuest: false, unavailableDates: [], lastAssigned: null, sortOrder: 15, spiritualStatus: 'elder', qualifications: ['chairman', 'speaker', 'conductor', 'reader', 'attendant_entrance', 'attendant_auditorium', 'mic'] },
+  { id: 'sp-17', name: 'Ladines, Andrew', congregation: 'Green Heights', isGuest: false, unavailableDates: [], lastAssigned: null, sortOrder: 16, spiritualStatus: 'publisher', qualifications: ['attendant_entrance', 'attendant_auditorium', 'mic'] },
+  { id: 'sp-18', name: 'Pajuelas, Jemar', congregation: 'Green Heights', isGuest: false, unavailableDates: [], lastAssigned: null, sortOrder: 17, spiritualStatus: 'up', qualifications: ['mic'] },
+  { id: 'sp-19', name: 'Pajuelas, Juan Miguel', congregation: 'Green Heights', isGuest: false, unavailableDates: [], lastAssigned: null, sortOrder: 18, spiritualStatus: 'up', qualifications: ['mic'] },
+  { id: 'sp-20', name: 'Reyes, Franz Darren', congregation: 'Green Heights', isGuest: false, unavailableDates: [], lastAssigned: null, sortOrder: 19, spiritualStatus: 'ms', qualifications: ['chairman', 'reader', 'speaker', 'attendant_entrance', 'attendant_auditorium', 'mic'] },
+  { id: 'sp-21', name: 'Tolentino, Cesar', congregation: 'Green Heights', isGuest: false, unavailableDates: [], lastAssigned: null, sortOrder: 20, spiritualStatus: 'publisher', qualifications: ['attendant_entrance', 'attendant_auditorium', 'mic'] },
+
+  // Group 4
+  { id: 'sp-22', name: 'Jaballa, Celito Jr.', congregation: 'Green Heights', isGuest: false, unavailableDates: [], lastAssigned: null, sortOrder: 21, spiritualStatus: 'elder', qualifications: ['chairman', 'speaker', 'conductor', 'reader', 'attendant_entrance', 'attendant_auditorium', 'mic'] },
+  { id: 'sp-23', name: 'Jaballa, Jim Harold', congregation: 'Green Heights', isGuest: false, unavailableDates: [], lastAssigned: null, sortOrder: 22, spiritualStatus: 'ms', qualifications: ['chairman', 'reader', 'speaker', 'attendant_entrance', 'attendant_auditorium', 'mic'] },
+  { id: 'sp-24', name: 'Arceta, Daniel', congregation: 'Green Heights', isGuest: false, unavailableDates: [], lastAssigned: null, sortOrder: 23, spiritualStatus: 'publisher', qualifications: ['attendant_entrance', 'attendant_auditorium', 'mic'] },
+  { id: 'sp-25', name: 'Arceta, John Daryl', congregation: 'Green Heights', isGuest: false, unavailableDates: [], lastAssigned: null, sortOrder: 24, spiritualStatus: 'ms', qualifications: ['chairman', 'reader', 'speaker', 'attendant_entrance', 'attendant_auditorium', 'mic'] },
+  { id: 'sp-26', name: 'Fuentes, Adiel', congregation: 'Green Heights', isGuest: false, unavailableDates: [], lastAssigned: null, sortOrder: 25, spiritualStatus: 'publisher', qualifications: ['attendant_entrance', 'attendant_auditorium', 'mic'] },
+  { id: 'sp-27', name: 'Jaballa, Ricarte', congregation: 'Green Heights', isGuest: false, unavailableDates: [], lastAssigned: null, sortOrder: 26, spiritualStatus: 'publisher', qualifications: ['attendant_entrance', 'attendant_auditorium', 'mic'] },
+  { id: 'sp-28', name: 'Nuqui, Reden', congregation: 'Green Heights', isGuest: false, unavailableDates: [], lastAssigned: null, sortOrder: 27, spiritualStatus: 'publisher', qualifications: ['attendant_entrance', 'attendant_auditorium', 'mic'] }
 ];

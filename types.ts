@@ -16,7 +16,7 @@ export type DutyRole =
   | 'mic'
   | string; // Dynamic role support
 
-export type SpiritualStatus = 'elder' | 'ms' | 'publisher';
+export type SpiritualStatus = 'elder' | 'ms' | 'publisher' | 'up';
 
 export type RoleCategory = 'meeting_conduct' | 'attendants' | 'audio_video' | 'custom';
 
@@ -68,6 +68,7 @@ export interface Assignment {
   locked: boolean;
   note?: string;
   hostSpeakerId?: string | null;
+  customTalkTitle?: string;
   customDutyAssignments?: Record<string, string[]>; // Dynamic roleId -> array of brother IDs
 }
 

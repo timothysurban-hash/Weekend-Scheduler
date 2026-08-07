@@ -126,20 +126,22 @@ export const DataService = {
   getSpeakers: async (): Promise<Speaker[]> => {
     try {
       const raw = await getIDBData(IDB_KEYS.SPEAKERS, INITIAL_SPEAKERS);
-      if (!Array.isArray(raw)) return INITIAL_SPEAKERS;
+      if (!Array.isArray(raw) || raw.length === 0) {
+        await DataService.saveSpeakers(INITIAL_SPEAKERS);
+        return INITIAL_SPEAKERS;
+      }
       
-      let valid = raw.filter(isValidSpeaker);
+      // Auto-migration: Check if IndexedDB has legacy cached data (e.g., sp-1 was named Arceta, John Daryl or missing spiritualStatus)
+      const isLegacyCache = raw.some(s => s.id === 'sp-1' && s.name.includes('Arceta')) ||
+                            raw.some(s => !s.spiritualStatus);
       
-      // Migration: Ensure sortOrder & customTags exist
-      valid = valid.map((s, idx) => {
-        const init = INITIAL_SPEAKERS.find(i => i.id === s.id);
-        return {
-          ...s,
-          sortOrder: typeof s.sortOrder === 'number' ? s.sortOrder : idx,
-          customTags: (s.customTags && s.customTags.length > 0) ? s.customTags : (init?.customTags || [])
-        };
-      });
+      if (isLegacyCache) {
+        console.info("Upgrading legacy IndexedDB speaker cache to 28 brothers roster...");
+        await DataService.saveSpeakers(INITIAL_SPEAKERS);
+        return INITIAL_SPEAKERS;
+      }
 
+      const valid = raw.filter(isValidSpeaker);
       return valid.length > 0 ? valid : INITIAL_SPEAKERS;
     } catch (e) {
       console.warn("Failed to load speakers, using initial.", e);

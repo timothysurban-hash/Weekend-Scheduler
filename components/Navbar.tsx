@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ViewState } from '../types';
 import { Icon } from './ui/Icon';
 
@@ -12,9 +12,6 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, setView }) => {
     return document.documentElement.classList.contains('dark') ||
       localStorage.getItem('theme') === 'dark';
   });
-
-  const itemRefs = useRef<(HTMLButtonElement | null)[]>([]);
-  const [pillStyle, setPillStyle] = useState<{ top: number; height: number; opacity: number }>({ top: 0, height: 48, opacity: 0 });
 
   useEffect(() => {
     if (isDark) {
@@ -38,26 +35,6 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, setView }) => {
     { id: 'settings', label: 'Settings', icon: 'settings' },
   ];
 
-  useLayoutEffect(() => {
-    const updatePosition = () => {
-      const activeIndex = navItems.findIndex(item => item.id === currentView);
-      if (activeIndex >= 0 && itemRefs.current[activeIndex]) {
-        const el = itemRefs.current[activeIndex];
-        if (el) {
-          setPillStyle({
-            top: el.offsetTop,
-            height: el.offsetHeight,
-            opacity: 1
-          });
-        }
-      }
-    };
-
-    updatePosition();
-    window.addEventListener('resize', updatePosition);
-    return () => window.removeEventListener('resize', updatePosition);
-  }, [currentView]);
-
   return (
     <>
       {/* Desktop Dark Sidebar */}
@@ -76,29 +53,18 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, setView }) => {
 
           <div className="text-xs font-black text-zinc-500 uppercase tracking-widest mb-3.5 px-3.5 hidden lg:block">Menu</div>
           
-          <div className="relative flex flex-col gap-2">
-            {/* Smooth Sliding Active Background Pill */}
-            <div 
-              className="absolute left-0 w-full bg-white dark:bg-zinc-800 rounded-2xl shadow-md transition-all duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] pointer-events-none"
-              style={{ 
-                transform: `translateY(${pillStyle.top}px)`,
-                height: `${pillStyle.height}px`,
-                opacity: pillStyle.opacity
-              }}
-            />
-
-            {navItems.map((item, idx) => {
+          <div className="flex flex-col gap-2">
+            {navItems.map((item) => {
               const isActive = currentView === item.id;
               return (
                 <button
                   key={item.id}
-                  ref={(el) => { itemRefs.current[idx] = el; }}
                   onClick={() => setView(item.id as ViewState)}
-                  className={`w-full flex items-center px-4 h-12 text-base rounded-2xl transition-colors duration-200 cursor-pointer relative z-10 active:scale-95 hover:scale-[1.01]
-                    ${isActive 
-                      ? 'text-zinc-950 dark:text-white font-black' 
+                  className={`w-full flex items-center px-4 h-12 text-base rounded-2xl transition-all duration-200 cursor-pointer active:scale-95 hover:scale-[1.01] ${
+                    isActive 
+                      ? 'bg-white dark:bg-zinc-800 text-zinc-950 dark:text-white font-black shadow-md' 
                       : 'text-zinc-400 hover:text-white hover:bg-zinc-800/40 font-bold'
-                    }`}
+                  }`}
                 >
                   <div className="w-7 h-7 flex items-center justify-center shrink-0 mr-3.5">
                     <Icon name={item.icon} className={`text-2xl ${isActive ? 'text-zinc-950 dark:text-white' : 'text-zinc-400'}`} />

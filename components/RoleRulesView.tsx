@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { DutyRole, Speaker, Assignment, AppSettings, RoleRule, RoleDefinition } from '../types';
 import { DEFAULT_ROLES } from '../constants';
-import { isBrotherQualifiedForRole, getCandidateStatus } from '../utils/dateUtils';
+import { getCandidateStatus } from '../utils/dateUtils';
 import { Search } from 'lucide-react';
 import { CustomSelect } from './ui/CustomSelect';
 import { showToast } from './ui/Toast';
@@ -10,6 +10,16 @@ import { Badge } from './ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from './ui/tabs';
 import { Input } from './ui/input';
 import { Icon } from './ui/Icon';
+
+const ROLE_TAB_ICONS: Record<string, string> = {
+  chairman: 'gavel',
+  speaker: 'record_voice_over',
+  conductor: 'school',
+  reader: 'menu_book',
+  attendant_entrance: 'door_front',
+  attendant_auditorium: 'event_seat',
+  mic: 'mic'
+};
 
 interface RoleRulesViewProps {
   speakers: Speaker[];
@@ -25,7 +35,7 @@ export const RoleRulesView: React.FC<RoleRulesViewProps> = ({
 }) => {
   const [selectedRole, setSelectedRole] = useState<DutyRole>('chairman');
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'elder' | 'ms' | 'publisher'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'elder' | 'ms' | 'publisher' | 'up'>('all');
 
   const roleRules = settings.roleRules || {};
   const authorityRoles = settings.authorityRoles || { conductorId: null, auditoriumAttendantId: null };
@@ -33,7 +43,7 @@ export const RoleRulesView: React.FC<RoleRulesViewProps> = ({
   const currentRule: RoleRule = roleRules[selectedRole] || {
     role: selectedRole,
     frequency: 'weekly',
-    rosterIds: speakers.filter(s => !s.isGuest && (s.qualifications?.includes(selectedRole) ?? true)).map(s => s.id)
+    rosterIds: []
   };
 
   const localBrothers = speakers.filter(s => !s.isGuest);
@@ -110,73 +120,87 @@ export const RoleRulesView: React.FC<RoleRulesViewProps> = ({
 
   return (
     <div className="space-y-6">
-      <Card className="rounded-3xl border border-slate-200/80 dark:border-zinc-800/80 bg-white dark:bg-zinc-900 shadow-xs">
-        <CardHeader className="pb-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div className="flex items-center space-x-3">
-              <div className="p-2.5 bg-amber-500/10 text-amber-600 dark:text-amber-400 rounded-2xl">
-                <Icon name="workspace_premium" className="text-2xl" />
-              </div>
-              <div>
-                <CardTitle className="text-base font-bold flex items-center">
-                  Authority Roles (Fixed Assignments)
-                </CardTitle>
-                <CardDescription className="text-xs mt-0.5">
-                  Assign dedicated brothers for Watchtower Conductor and Auditorium Attendant.
-                </CardDescription>
-              </div>
+      <div className="bg-[#18181b] text-white rounded-3xl p-6 md:p-7 border border-zinc-800 shadow-xl overflow-hidden relative space-y-6">
+        <div className="absolute -right-8 -bottom-8 w-48 h-48 border border-zinc-700/20 rounded-full pointer-events-none" />
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative z-10">
+          <div className="flex items-center space-x-3">
+            <div className="p-2.5 bg-zinc-800/80 text-amber-400 rounded-2xl border border-zinc-700/80">
+              <Icon name="workspace_premium" className="text-2xl" />
             </div>
-
-            <button
-              onClick={handleApplyAuthorityRoles}
-              className="px-5 py-2.5 rounded-full bg-[#18181b] dark:bg-white text-white dark:text-zinc-950 font-extrabold text-xs shadow-md hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer border border-zinc-800 dark:border-zinc-200 shrink-0"
-            >
-              <Icon name="bolt" className="text-base text-amber-400 dark:text-amber-500" />
-              Apply Authority Roles
-            </button>
-          </div>
-        </CardHeader>
-        <CardContent className="pt-2">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
-              <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Watchtower Conductor</label>
-              <CustomSelect
-                options={brotherOptions}
-                value={authorityRoles.conductorId || ''}
-                onChange={(val) => handleUpdateAuthorityRoles('conductorId', val || null)}
-                placeholder="Select fixed Conductor..."
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Auditorium Attendant</label>
-              <CustomSelect
-                options={brotherOptions}
-                value={authorityRoles.auditoriumAttendantId || ''}
-                onChange={(val) => handleUpdateAuthorityRoles('auditoriumAttendantId', val || null)}
-                placeholder="Select fixed Attendant..."
-              />
+              <h3 className="text-base font-extrabold text-white flex items-center">
+                Authority Roles (Fixed Assignments)
+              </h3>
+              <p className="text-xs text-zinc-400 mt-0.5">
+                Assign dedicated brothers for Watchtower Conductor and Auditorium Attendant.
+              </p>
             </div>
           </div>
-        </CardContent>
-      </Card>
+
+          <button
+            onClick={handleApplyAuthorityRoles}
+            className="px-5 py-2.5 rounded-full bg-white text-zinc-950 hover:bg-zinc-100 font-extrabold text-xs shadow-md hover:scale-[1.02] active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer border border-white shrink-0"
+          >
+            <Icon name="bolt" className="text-base text-amber-500" />
+            Apply Authority Roles
+          </button>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 relative z-10">
+          <div>
+            <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2">Watchtower Conductor</label>
+            <CustomSelect
+              options={brotherOptions}
+              value={authorityRoles.conductorId || ''}
+              onChange={(val) => handleUpdateAuthorityRoles('conductorId', val || null)}
+              placeholder="Select fixed Conductor..."
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-bold text-zinc-400 uppercase tracking-wider mb-2">Auditorium Attendant</label>
+            <CustomSelect
+              options={brotherOptions}
+              value={authorityRoles.auditoriumAttendantId || ''}
+              onChange={(val) => handleUpdateAuthorityRoles('auditoriumAttendantId', val || null)}
+              placeholder="Select fixed Attendant..."
+            />
+          </div>
+        </div>
+      </div>
 
       <Tabs value={selectedRole} onValueChange={(val) => setSelectedRole(val as DutyRole)}>
-        <TabsList className="w-full flex justify-start overflow-x-auto h-auto p-1.5 bg-slate-100 dark:bg-zinc-800/60 rounded-2xl border border-slate-200/80 dark:border-zinc-700/60">
-          {roles.map(def => (
-            <TabsTrigger
-              key={def.key}
-              value={def.key}
-              className="py-2 px-4 text-xs font-bold whitespace-nowrap cursor-pointer rounded-xl transition-all data-[state=active]:bg-white dark:data-[state=active]:bg-zinc-900 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white data-[state=active]:shadow-xs"
-            >
-              {def.name}
-            </TabsTrigger>
-          ))}
+        <TabsList className="w-full flex justify-start overflow-x-auto h-auto p-2 bg-slate-100/90 dark:bg-zinc-800/60 rounded-3xl border border-slate-200/80 dark:border-zinc-700/60 gap-2">
+          {roles.map(def => {
+            const isTabActive = selectedRole === def.key;
+            return (
+              <TabsTrigger
+                key={def.key}
+                value={def.key}
+                className={`group py-3.5 px-5 text-xs font-extrabold whitespace-nowrap cursor-pointer rounded-2xl transition-all flex flex-col items-center justify-center gap-1 min-w-[105px] border ${
+                  isTabActive
+                    ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-white border-slate-200/90 dark:border-zinc-700/80 shadow-lg shadow-slate-200/80 dark:shadow-black/60 scale-105 z-10'
+                    : 'bg-transparent text-slate-500 dark:text-slate-400 border-transparent hover:bg-white/60 dark:hover:bg-zinc-800/40 hover:text-slate-800 dark:hover:text-slate-200'
+                }`}
+              >
+                <Icon 
+                  name={ROLE_TAB_ICONS[def.key] || 'settings'} 
+                  className={`text-2xl transition-all ${
+                    isTabActive 
+                      ? 'text-amber-500 dark:text-amber-400 scale-110' 
+                      : 'text-slate-400 dark:text-slate-500'
+                  }`} 
+                />
+                <span className="tracking-tight font-extrabold">{def.name}</span>
+                {isTabActive && (
+                  <div className="w-7 h-1 rounded-full bg-amber-500 dark:bg-amber-400 mt-0.5 animate-in fade-in zoom-in-75 duration-200 shadow-xs" />
+                )}
+              </TabsTrigger>
+            );
+          })}
         </TabsList>
 
         {roles.map(def => {
-          const qualifiedForRole = localBrothers.filter(b => isBrotherQualifiedForRole(b, def.key, roles));
-
           return (
             <TabsContent key={def.key} value={def.key} className="mt-6">
               <Card className="rounded-3xl border border-slate-200/80 dark:border-zinc-800/80 bg-white dark:bg-zinc-900 shadow-xs">
@@ -242,6 +266,28 @@ export const RoleRulesView: React.FC<RoleRulesViewProps> = ({
                         >
                           MS
                         </button>
+                        <button
+                          type="button"
+                          onClick={() => setStatusFilter('publisher')}
+                          className={`px-3 py-1 rounded-full font-bold text-xs transition-all cursor-pointer ${
+                            statusFilter === 'publisher'
+                              ? 'bg-emerald-600 text-white dark:bg-emerald-500 shadow-xs'
+                              : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                          }`}
+                        >
+                          Publisher
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setStatusFilter('up')}
+                          className={`px-3 py-1 rounded-full font-bold text-xs transition-all cursor-pointer ${
+                            statusFilter === 'up'
+                              ? 'bg-amber-600 text-white dark:bg-amber-600 shadow-xs'
+                              : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                          }`}
+                        >
+                          UP
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -250,7 +296,7 @@ export const RoleRulesView: React.FC<RoleRulesViewProps> = ({
                   <div>
                     <div className="flex items-center justify-between mb-4">
                       <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
-                        Qualified Roster for {def.name} ({qualifiedForRole.length} Brothers)
+                        Roster for {def.name} ({currentRule.rosterIds.length} Active / {localBrothers.length} Brothers)
                       </h4>
                       {(searchQuery || statusFilter !== 'all') && (
                         <span className="text-xs text-muted-foreground">
@@ -267,7 +313,6 @@ export const RoleRulesView: React.FC<RoleRulesViewProps> = ({
                       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                         {filteredBrothers.map(brother => {
                           const isInRoster = currentRule.rosterIds.includes(brother.id);
-                          const isQualified = isBrotherQualifiedForRole(brother, def.key, roles);
 
                           return (
                             <div
@@ -281,20 +326,8 @@ export const RoleRulesView: React.FC<RoleRulesViewProps> = ({
                             >
                               <div className="flex flex-col min-w-0 pr-2">
                                 <span className="font-semibold text-sm truncate">{brother.name}</span>
-                                {brother.customTags && brother.customTags.length > 0 && (
-                                  <div className="flex gap-1 mt-0.5 flex-wrap">
-                                    {brother.customTags.map(tag => (
-                                      <span key={tag} className="text-[10px] text-muted-foreground bg-slate-100 dark:bg-zinc-800 px-1.5 py-0.5 rounded font-medium">
-                                        {tag}
-                                      </span>
-                                    ))}
-                                  </div>
-                                )}
                               </div>
                               <div className="flex items-center space-x-1.5 shrink-0">
-                                {!isQualified && (
-                                  <Badge variant="outline" className="text-[10px] text-amber-500 border-amber-300">Unqualified</Badge>
-                                )}
                                 {isInRoster ? (
                                   <Badge variant="default" className="text-[10px]">Active</Badge>
                                 ) : (

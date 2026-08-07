@@ -4,7 +4,7 @@ import { Assignment, Speaker, Outline, AppSettings, DutyRole } from '../types';
 import { Download, Calendar as CalendarIcon, ArrowLeftRight, AlertCircle, ArrowDown, ChevronLeft, ChevronRight, Trash2, ChevronDown, Eye, CheckSquare, Square } from 'lucide-react';
 import { CustomSelect } from './ui/CustomSelect';
 import { PrintScheduleModal } from './PrintScheduleModal';
-import { isUpcomingSunday, getYearMonth, formatViewMonth, isCandidateEligible, isBrotherQualifiedForRole } from '../utils/dateUtils';
+import { isUpcomingSunday, getYearMonth, formatViewMonth, isCandidateEligible } from '../utils/dateUtils';
 import { showToast } from './ui/Toast';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -47,10 +47,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
   // State for Print Modal
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
 
-  // State for Swap Mode
-  const [swapSourceId, setSwapSourceId] = useState<string | null>(null);
-  const [pendingSwapTargetId, setPendingSwapTargetId] = useState<string | null>(null);
-  const [highlightedSwapIds, setHighlightedSwapIds] = useState<string[]>([]);
+
 
   // State for Fill Animation
   const [filledIds, setFilledIds] = useState<string[]>([]);
@@ -61,7 +58,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
   // State for Quick Add Guest
   const [isAddingGuest, setIsAddingGuest] = useState(false);
   const [guestTargetId, setGuestTargetId] = useState<string | null>(null);
-  const [newGuest, setNewGuest] = useState({ name: '', congregation: '', hostId: '', outlineId: 0 });
+  const [newGuest, setNewGuest] = useState({ name: '', congregation: '', hostId: '', outlineId: 0, customTalkTitle: '' });
 
   // State for Clear Month Confirmation
   const [isClearModalOpen, setIsClearModalOpen] = useState(false);
@@ -72,6 +69,24 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
 
   // State for Schedule Guide Modal
   const [isGuideOpen, setIsGuideOpen] = useState(false);
+
+  const handlePrevMonth = () => {
+    setViewDate(prev => {
+      const newDate = new Date(prev);
+      newDate.setDate(1);
+      newDate.setMonth(newDate.getMonth() - 1);
+      return newDate;
+    });
+  };
+
+  const handleNextMonth = () => {
+    setViewDate(prev => {
+      const newDate = new Date(prev);
+      newDate.setDate(1);
+      newDate.setMonth(newDate.getMonth() + 1);
+      return newDate;
+    });
+  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -84,11 +99,26 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
+        const activeEl = document.activeElement;
+        const isEditingText = activeEl && (
+            activeEl.tagName === 'INPUT' ||
+            activeEl.tagName === 'TEXTAREA' ||
+            activeEl.tagName === 'SELECT' ||
+            (activeEl as HTMLElement).isContentEditable
+        );
+
         if (e.key === 'Escape') {
-            setSwapSourceId(null);
             setIsColumnMenuOpen(false);
             setIsExportMenuOpen(false);
             setIsGuideOpen(false);
+        } else if (!isEditingText) {
+            if (e.key === 'ArrowLeft') {
+                e.preventDefault();
+                handlePrevMonth();
+            } else if (e.key === 'ArrowRight') {
+                e.preventDefault();
+                handleNextMonth();
+            }
         }
     };
 
@@ -131,20 +161,6 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
       updateAssignments(updated);
     }
   }, [viewDate]);
-
-  const handlePrevMonth = () => {
-    const newDate = new Date(viewDate);
-    newDate.setDate(1);
-    newDate.setMonth(newDate.getMonth() - 1);
-    setViewDate(newDate);
-  };
-
-  const handleNextMonth = () => {
-    const newDate = new Date(viewDate);
-    newDate.setDate(1);
-    newDate.setMonth(newDate.getMonth() + 1);
-    setViewDate(newDate);
-  };
 
   const handleToday = () => {
     const today = new Date();
@@ -277,14 +293,12 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
     };
 
     const getQualifiedBrothers = (role: DutyRole) => {
-      // Check custom roster from roleRules settings first
+      // Rotate strictly among brothers activated in roleRules roster
       const rule = settings.roleRules?.[role];
-      if (rule && rule.rosterIds && rule.rosterIds.length > 0) {
-        const rosterList = localBrothers.filter(s => rule.rosterIds.includes(s.id) && isBrotherQualifiedForRole(s, role));
-        if (rosterList.length > 0) return rosterList;
+      if (rule && rule.rosterIds) {
+        return localBrothers.filter(s => rule.rosterIds.includes(s.id));
       }
-
-      return localBrothers.filter(s => isBrotherQualifiedForRole(s, role));
+      return [];
     };
 
     // Track round-robin index offset per role for tie-breaking brothers with equal history
@@ -459,8 +473,18 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
   };
 
   const toggleLock = (id: string) => {
-    const updated = assignments.map(a => a.id === id ? { ...a, locked: !a.locked } : a);
+    const target = assignments.find(a => a.id === id);
+    if (!target) return;
+    const newLocked = !target.locked;
+    const updated = assignments.map(a => a.id === id ? { ...a, locked: newLocked } : a);
     updateAssignments(updated);
+
+    const formattedDate = new Date(target.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    if (newLocked) {
+      showToast(`Locked all roles for ${formattedDate}`, 'info');
+    } else {
+      showToast(`Unlocked roles for ${formattedDate}`, 'info');
+    }
   };
 
   const handleSpeakerChange = (assignmentId: string, speakerId: string) => {
@@ -475,7 +499,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
 
   const openGuestModal = (assignmentId: string) => {
       setGuestTargetId(assignmentId);
-      setNewGuest({ name: '', congregation: '', hostId: '', outlineId: 0 });
+      setNewGuest({ name: '', congregation: '', hostId: '', outlineId: 0, customTalkTitle: '' });
       setIsAddingGuest(true);
   };
 
@@ -487,55 +511,21 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
       };
       updateSpeakers([...speakers, guestSpeaker]);
       const updatedAssignments = assignments.map(a => 
-          a.id === guestTargetId ? { ...a, speakerId: guestId, outlineId: newGuest.outlineId || null, locked: false, hostSpeakerId: newGuest.hostId || null } : a
+          a.id === guestTargetId ? { 
+              ...a, 
+              speakerId: guestId, 
+              outlineId: newGuest.outlineId || null, 
+              customTalkTitle: newGuest.customTalkTitle || undefined,
+              locked: false, 
+              hostSpeakerId: newGuest.hostId || null 
+          } : a
       );
       updateAssignments(updatedAssignments);
       setIsAddingGuest(false);
       setGuestTargetId(null);
   };
 
-  const handleSwapClick = (targetId: string) => {
-      if (!swapSourceId) {
-          setSwapSourceId(targetId);
-          return;
-      }
-      if (swapSourceId === targetId) {
-          setSwapSourceId(null);
-          return;
-      }
-      const source = assignments.find(a => a.id === swapSourceId);
-      const target = assignments.find(a => a.id === targetId);
-      if (!source || !target) {
-          setSwapSourceId(null);
-          return;
-      }
-      if (source.locked || target.locked) {
-        showToast("Cannot swap locked assignments. Please unlock first.", 'error');
-        setSwapSourceId(null);
-        return;
-      }
-      setPendingSwapTargetId(targetId);
-  };
 
-  const executeSwap = () => {
-      if (!swapSourceId || !pendingSwapTargetId) return;
-      const sourceIndex = assignments.findIndex(a => a.id === swapSourceId);
-      const targetIndex = assignments.findIndex(a => a.id === pendingSwapTargetId);
-      if (sourceIndex === -1 || targetIndex === -1) return;
-      const newAssignments = [...assignments];
-      const source = newAssignments[sourceIndex];
-      const target = newAssignments[targetIndex];
-      const tempSpeaker = source.speakerId;
-      const tempOutline = source.outlineId;
-      const tempHost = source.hostSpeakerId;
-      newAssignments[sourceIndex] = { ...source, speakerId: target.speakerId, outlineId: target.outlineId, hostSpeakerId: target.hostSpeakerId };
-      newAssignments[targetIndex] = { ...target, speakerId: tempSpeaker, outlineId: tempOutline, hostSpeakerId: tempHost };
-      updateAssignments(newAssignments);
-      setHighlightedSwapIds([swapSourceId, pendingSwapTargetId]);
-      setTimeout(() => setHighlightedSwapIds([]), 2000); 
-      setSwapSourceId(null); 
-      setPendingSwapTargetId(null);
-  };
 
   const isRoleInFilter = (roleKey: string) => {
     if (roleFilter === 'all') return true;
@@ -607,30 +597,32 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
   };
 
   const getAssignmentConflicts = (assignment: Assignment) => {
-    const assigned: { roleName: string; id: string }[] = [];
-    if (assignment.chairmanId) assigned.push({ roleName: 'Chairman', id: assignment.chairmanId });
-    if (assignment.conductorId) assigned.push({ roleName: 'WT Conductor', id: assignment.conductorId });
-    if (assignment.readerId) assigned.push({ roleName: 'WT Reader', id: assignment.readerId });
-    if (assignment.speakerId) assigned.push({ roleName: 'Public Speaker', id: assignment.speakerId });
-    if (assignment.entranceAttendantId) assigned.push({ roleName: 'Entrance Attendant', id: assignment.entranceAttendantId });
-    if (assignment.auditoriumAttendantId) assigned.push({ roleName: 'Auditorium Attendant', id: assignment.auditoriumAttendantId });
+    const assigned: { roleName: string; id: string; isAuditorium: boolean }[] = [];
+    if (assignment.chairmanId) assigned.push({ roleName: 'Chairman', id: assignment.chairmanId, isAuditorium: false });
+    if (assignment.conductorId) assigned.push({ roleName: 'WT Conductor', id: assignment.conductorId, isAuditorium: false });
+    if (assignment.readerId) assigned.push({ roleName: 'WT Reader', id: assignment.readerId, isAuditorium: false });
+    if (assignment.speakerId) assigned.push({ roleName: 'Public Speaker', id: assignment.speakerId, isAuditorium: false });
+    if (assignment.entranceAttendantId) assigned.push({ roleName: 'Entrance Attendant', id: assignment.entranceAttendantId, isAuditorium: false });
+    if (assignment.auditoriumAttendantId) assigned.push({ roleName: 'Auditorium Attendant', id: assignment.auditoriumAttendantId, isAuditorium: true });
     if (assignment.micServerIds && assignment.micServerIds.length > 0) {
       assignment.micServerIds.forEach((mId, idx) => {
-        if (mId) assigned.push({ roleName: `Mic ${idx + 1}`, id: mId });
+        if (mId) assigned.push({ roleName: `Mic ${idx + 1}`, id: mId, isAuditorium: false });
       });
     }
 
-    const counts: Record<string, string[]> = {};
+    const counts: Record<string, { roleName: string; isAuditorium: boolean }[]> = {};
     assigned.forEach(item => {
       if (!counts[item.id]) counts[item.id] = [];
-      counts[item.id].push(item.roleName);
+      counts[item.id].push(item);
     });
 
     const conflictList: string[] = [];
-    Object.entries(counts).forEach(([id, roles]) => {
-      if (roles.length > 1) {
+    Object.entries(counts).forEach(([id, items]) => {
+      // Auditorium Attendant role can be double-booked with any other role without conflict
+      const nonAuditoriumRoles = items.filter(it => !it.isAuditorium);
+      if (nonAuditoriumRoles.length > 1) {
         const brotherName = speakers.find(s => s.id === id)?.name || 'Brother';
-        conflictList.push(`${brotherName} (${roles.join(' & ')})`);
+        conflictList.push(`${brotherName} (${nonAuditoriumRoles.map(r => r.roleName).join(' & ')})`);
       }
     });
 
@@ -811,7 +803,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
               <Icon name="keyboard" className="text-base" /> Keyboard Shortcuts
             </h4>
             <p className="text-xs text-muted-foreground leading-relaxed">
-              Press <kbd className="px-1.5 py-0.5 bg-background border border-border rounded text-[10px] font-mono">Escape</kbd> anytime to cancel active Swap Mode or close open menus.
+              Press <kbd className="px-1.5 py-0.5 bg-background border border-border rounded text-[10px] font-mono">Escape</kbd> anytime to close open menus or modals.
             </p>
           </div>
         </div>
@@ -855,13 +847,23 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
                 />
             </div>
             <div>
-                <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Outline (Optional)</label>
+                <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Outline (Standard List)</label>
                 <CustomSelect 
                     options={outlines.map(o => ({ value: o.id, label: `#${o.id} - ${o.title}` }))}
                     value={newGuest.outlineId || 0}
                     onChange={(val) => setNewGuest({...newGuest, outlineId: Number(val)})}
-                    placeholder="Select outline..."
+                    placeholder="Select outline from list..."
                 />
+            </div>
+            <div>
+                <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">OR Custom Special Talk Title / Theme</label>
+                <Input 
+                    type="text" 
+                    value={newGuest.customTalkTitle}
+                    onChange={(e) => setNewGuest({...newGuest, customTalkTitle: e.target.value})}
+                    placeholder="e.g. Special Talk: Real Hope for the Future"
+                />
+                <span className="text-[11px] text-muted-foreground mt-1 block">Use this for special talks or themes not included in the standard outline list.</span>
             </div>
         </div>
         <DialogFooter>
@@ -871,28 +873,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
         </DialogFooter>
       </Dialog>
 
-      {/* Swap Modal */}
-      <Dialog open={Boolean(pendingSwapTargetId && swapSourceId)} onOpenChange={() => setPendingSwapTargetId(null)}>
-        <DialogHeader>
-          <DialogTitle className="flex items-center">
-            <ArrowLeftRight className="w-5 h-5 mr-2 text-primary" />
-            Confirm Schedule Swap
-          </DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4 py-2">
-            {swapSourceId && renderAssignmentCard(swapSourceId)}
-            <div className="flex justify-center -my-2 relative z-10">
-              <div className="bg-background border border-border rounded-full p-1.5 shadow-xs text-muted-foreground">
-                <ArrowDown className="w-4 h-4" />
-              </div>
-            </div>
-            {pendingSwapTargetId && renderAssignmentCard(pendingSwapTargetId)}
-        </div>
-        <DialogFooter>
-            <Button variant="outline" onClick={() => setPendingSwapTargetId(null)}>Cancel</Button>
-            <Button onClick={executeSwap}>Confirm Swap</Button>
-        </DialogFooter>
-      </Dialog>
+
 
 
 
@@ -920,6 +901,10 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
                 </span>
                 <span className="text-zinc-300 font-medium">{nextOutline.title}</span>
               </>
+            ) : nextAssignment?.customTalkTitle ? (
+              <span className="px-2.5 py-0.5 rounded-md bg-zinc-800 border border-amber-500/40 text-amber-300 font-bold text-xs">
+                {nextAssignment.customTalkTitle}
+              </span>
             ) : (
               <span>No talk outline assigned for this weekend meeting.</span>
             )}
@@ -967,14 +952,8 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
               {/* Toolbar */}
               <div className="flex flex-col md:flex-row items-center justify-between gap-4 py-2 w-full">
                 
-                {/* LEFT GROUP: Back to Today & Swap Alert */}
+                {/* LEFT GROUP: Back to Today */}
                 <div className="flex items-center gap-2 w-full md:w-auto">
-                  {swapSourceId && (
-                    <div className="flex items-center space-x-2 animate-in fade-in slide-in-from-left-4 duration-300 bg-primary/10 border border-primary/30 rounded-full pl-3.5 pr-1.5 py-1.5 shadow-xs">
-                      <span className="text-xs font-bold text-primary flex items-center whitespace-nowrap"><Icon name="swap_horiz" className="text-base mr-1.5" />Select target row (Press Esc to cancel)</span>
-                      <button onClick={() => setSwapSourceId(null)} className="p-1 rounded-full text-muted-foreground hover:text-foreground hover:bg-background transition" aria-label="Cancel swap mode" title="Cancel Swap"><Icon name="close" className="text-base" /></button>
-                    </div>
-                  )}
                   <button onClick={handleToday} className="text-sm font-semibold text-primary hover:bg-primary/10 px-3 py-2 cursor-pointer rounded-lg transition-colors whitespace-nowrap">
                     Back to Today
                   </button>
@@ -1108,8 +1087,6 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
                 {displayedAssignments.map((assignment, index) => {
                      const currentSpeaker = speakers.find(s => s.id === assignment.speakerId);
                      const hostSpeaker = speakers.find(s => s.id === assignment.hostSpeakerId);
-                     const isSwapSource = swapSourceId === assignment.id;
-                     const isHighlighted = highlightedSwapIds.includes(assignment.id);
                      const assignmentOutline = outlines.find(o => o.id === assignment.outlineId);
                      const filledIndex = filledIds.indexOf(assignment.id);
                      const isJustFilled = filledIndex !== -1;
@@ -1162,7 +1139,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
                                  ${isJustFilled ? 'animate-pop-in' : ''} 
                                  ${isExiting 
                                      ? 'animate-fade-out-up opacity-0 pointer-events-none' 
-                                     : `animate-enter-slide opacity-0 ${isHighlighted ? 'border-primary/50 ring-2 ring-primary/20 shadow-md' : isSwapSource ? 'border-primary ring-2 ring-primary bg-primary/10 shadow-md animate-pulse' : isThisWeek ? 'border-amber-400 ring-2 ring-amber-400/20 shadow-xs bg-amber-500/10' : 'border-border shadow-xs'}`
+                                     : `animate-enter-slide opacity-0 ${isThisWeek ? 'border-amber-400 ring-2 ring-amber-400/20 shadow-xs bg-amber-500/10' : 'border-border shadow-xs'}`
                                  }`}
                          >
                              {isThisWeek && (
@@ -1181,17 +1158,6 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
                                      </span>
                                  </div>
                                  <div className="flex space-x-2 mr-6">
-                                     <Button 
-                                         size="icon"
-                                         variant={isSwapSource ? "default" : "outline"}
-                                         onClick={() => handleSwapClick(assignment.id)}
-                                         disabled={assignment.locked && !isSwapSource}
-                                         className="h-10 w-10 min-h-[44px] min-w-[44px]"
-                                         aria-label="Swap assignment speaker"
-                                         title="Swap assignment"
-                                     >
-                                         <Icon name="swap_horiz" className="text-base" />
-                                     </Button>
                                      <Button 
                                          size="icon"
                                          variant={assignment.locked ? "secondary" : "outline"}
@@ -1237,6 +1203,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
                                              const updated = assignments.map(a => a.id === assignment.id ? { ...a, chairmanId: val || null } : a);
                                              updateAssignments(updated);
                                            }}
+                                           disabled={assignment.locked}
                                            placeholder="Select Chairman..."
                                          />
                                        </div>
@@ -1253,6 +1220,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
                                              const updated = assignments.map(a => a.id === assignment.id ? { ...a, conductorId: val || null } : a);
                                              updateAssignments(updated);
                                            }}
+                                           disabled={assignment.locked}
                                            placeholder="Select Conductor..."
                                          />
                                        </div>
@@ -1269,6 +1237,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
                                              const updated = assignments.map(a => a.id === assignment.id ? { ...a, readerId: val || null } : a);
                                              updateAssignments(updated);
                                            }}
+                                           disabled={assignment.locked}
                                            placeholder="Select Reader..."
                                          />
                                        </div>
@@ -1285,6 +1254,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
                                              const updated = assignments.map(a => a.id === assignment.id ? { ...a, entranceAttendantId: val || null } : a);
                                              updateAssignments(updated);
                                            }}
+                                           disabled={assignment.locked}
                                            placeholder="Select Attendant..."
                                          />
                                        </div>
@@ -1301,6 +1271,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
                                              const updated = assignments.map(a => a.id === assignment.id ? { ...a, auditoriumAttendantId: val || null } : a);
                                              updateAssignments(updated);
                                            }}
+                                           disabled={assignment.locked}
                                            placeholder="Select Attendant..."
                                          />
                                        </div>
@@ -1320,6 +1291,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
                                                const updated = assignments.map(a => a.id === assignment.id ? { ...a, micServerIds: newMics } : a);
                                                updateAssignments(updated);
                                              }}
+                                             disabled={assignment.locked}
                                              placeholder="Mic Server 1..."
                                            />
                                          </div>
@@ -1334,6 +1306,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
                                                const updated = assignments.map(a => a.id === assignment.id ? { ...a, micServerIds: newMics } : a);
                                                updateAssignments(updated);
                                              }}
+                                             disabled={assignment.locked}
                                              placeholder="Mic Server 2..."
                                            />
                                          </div>
@@ -1381,18 +1354,34 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
                                                         <span className="text-xs font-bold text-primary bg-primary/10 px-1.5 py-0.5 rounded mr-2 border border-primary/20">#{assignmentOutline.id}</span>
                                                         <span className="text-sm font-medium text-foreground">{assignmentOutline.title}</span>
                                                     </>
+                                                ) : assignment.customTalkTitle ? (
+                                                    <span className="text-sm font-semibold text-amber-600 dark:text-amber-400">{assignment.customTalkTitle}</span>
                                                 ) : (
                                                     <span className="text-sm text-muted-foreground italic">No outline selected</span>
                                                 )}
                                            </div>
                                        ) : (
-                                           <CustomSelect 
-                                               options={outlineOptions}
-                                               value={assignment.outlineId || 0}
-                                               onChange={(val) => handleOutlineChange(assignment.id, Number(val))}
-                                               disabled={!assignment.speakerId}
-                                               placeholder={assignment.speakerId ? "Select Outline..." : "First select speaker"}
-                                           />
+                                           <div className="space-y-2">
+                                               <CustomSelect 
+                                                   options={outlineOptions}
+                                                   value={assignment.outlineId || 0}
+                                                   onChange={(val) => handleOutlineChange(assignment.id, Number(val))}
+                                                   disabled={!assignment.speakerId}
+                                                   placeholder={assignment.speakerId ? "Select Standard Outline..." : "First select speaker"}
+                                               />
+                                               <Input
+                                                   type="text"
+                                                   value={assignment.customTalkTitle || ''}
+                                                   onChange={(e) => {
+                                                       const val = e.target.value;
+                                                       const updated = assignments.map(a => a.id === assignment.id ? { ...a, customTalkTitle: val } : a);
+                                                       updateAssignments(updated);
+                                                   }}
+                                                   disabled={!assignment.speakerId}
+                                                   placeholder="Or enter Special Talk Title..."
+                                                   className="text-xs"
+                                               />
+                                           </div>
                                        )}
                                    </div>
                                  )}
@@ -1410,7 +1399,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
                         <thead className="bg-muted/40 border-b border-border">
                             {/* Single Header Role Row */}
                             <tr className="text-xs font-semibold text-muted-foreground border-b border-border">
-                                <th className="px-4 py-3 min-w-[100px]">Meeting Date</th>
+                                <th className="px-4 py-3 min-w-[140px]">Meeting Date</th>
                                 {isRoleInFilter('chairman') && visibleRoles.includes('chairman') && <th className="px-3 py-3">Chairman</th>}
                                 {isRoleInFilter('conductor') && visibleRoles.includes('conductor') && <th className="px-3 py-3">WT Conductor</th>}
                                 {isRoleInFilter('reader') && visibleRoles.includes('reader') && <th className="px-3 py-3">WT Reader</th>}
@@ -1422,7 +1411,6 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
                         </thead>
                         <tbody key={viewDate.toISOString()} className="divide-y divide-border">
                             {displayedAssignments.map((assignment, index) => {
-                                const isSwapSource = swapSourceId === assignment.id;
                                 const assignmentOutline = outlines.find(o => o.id === assignment.outlineId);
                                 const isExiting = exitingIds.includes(assignment.id);
                                 const exitingIndex = exitingIds.indexOf(assignment.id);
@@ -1433,16 +1421,22 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
                                     <tr 
                                         key={assignment.id} 
                                         style={isExiting ? { animationDelay: `${exitingIndex * 0.05}s` } : { animationDelay: `${index * 0.03}s` }}
-                                        className={`group transition-all duration-300 ${isSwapSource ? 'bg-primary/10 ring-2 ring-primary shadow-md animate-pulse' : (isThisWeek ? 'bg-amber-500/10' : 'hover:bg-muted/30')}`}
+                                        className={`group transition-all duration-300 ${isThisWeek ? 'bg-amber-500/10' : 'hover:bg-muted/30'}`}
                                     >
-                                        <td className="px-4 py-3 align-top font-bold text-foreground">
-                                            {new Date(assignment.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                                            <div className="text-[10px] font-medium text-muted-foreground">{new Date(assignment.date).getFullYear()}</div>
+                                        <td className="px-4 py-3.5 align-top">
+                                            <div className="text-xl font-black tracking-tight text-slate-900 dark:text-white leading-tight">
+                                              {new Date(assignment.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                                            </div>
+                                            <div className="text-xs font-bold text-slate-400 dark:text-slate-500 mt-0.5">
+                                              {new Date(assignment.date).getFullYear()}
+                                            </div>
                                             {isThisWeek && (
-                                              <Badge className="bg-amber-400 text-amber-950 font-extrabold text-[9px] uppercase px-1.5 py-0 mt-1">This Week</Badge>
+                                              <Badge className="bg-amber-400 hover:bg-amber-400 text-amber-950 font-black text-[10px] uppercase px-2 py-0.5 mt-2 shadow-2xs block w-fit">
+                                                This Week
+                                              </Badge>
                                             )}
                                             {conflicts.length > 0 && (
-                                              <div className="mt-1.5 p-1 bg-destructive/10 border border-destructive/30 rounded text-destructive text-[10px] font-semibold" title={`Conflict: ${conflicts.join(', ')}`}>
+                                              <div className="mt-2 p-1.5 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 rounded-lg text-rose-600 dark:text-rose-400 text-[10px] font-bold shadow-2xs block w-fit" title={`Conflict: ${conflicts.join(', ')}`}>
                                                 <span className="flex items-center gap-1"><Icon name="warning" className="text-xs" /> Double-booked</span>
                                               </div>
                                             )}
@@ -1458,6 +1452,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
                                                 const updated = assignments.map(a => a.id === assignment.id ? { ...a, chairmanId: val || null } : a);
                                                 updateAssignments(updated);
                                               }}
+                                              disabled={assignment.locked}
                                               placeholder="Chairman..."
                                             />
                                           </td>
@@ -1473,6 +1468,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
                                                 const updated = assignments.map(a => a.id === assignment.id ? { ...a, conductorId: val || null } : a);
                                                 updateAssignments(updated);
                                               }}
+                                              disabled={assignment.locked}
                                               placeholder="Conductor..."
                                             />
                                           </td>
@@ -1488,6 +1484,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
                                                 const updated = assignments.map(a => a.id === assignment.id ? { ...a, readerId: val || null } : a);
                                                 updateAssignments(updated);
                                               }}
+                                              disabled={assignment.locked}
                                               placeholder="Reader..."
                                             />
                                           </td>
@@ -1500,13 +1497,29 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
                                               options={getBrotherCandidateOptions('speaker', assignment.date, assignment.speakerId)}
                                               value={assignment.speakerId || ''}
                                               onChange={(val) => handleSpeakerChange(assignment.id, val || '')}
+                                              disabled={assignment.locked}
                                               placeholder="Speaker..."
                                             />
-                                            {assignmentOutline && (
+                                            {!assignment.locked && (
+                                              <button
+                                                type="button"
+                                                onClick={() => openGuestModal(assignment.id)}
+                                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold text-primary bg-primary/10 hover:bg-primary/20 border border-primary/20 dark:border-primary/30 transition-all cursor-pointer shadow-2xs mt-1 active:scale-95"
+                                                title="Add visiting guest speaker for this date"
+                                              >
+                                                <Icon name="person_add" className="text-xs text-primary" />
+                                                <span>Add Guest Speaker</span>
+                                              </button>
+                                            )}
+                                            {assignmentOutline ? (
                                               <div className="text-[10px] text-primary font-semibold bg-primary/10 p-1.5 rounded-md border border-primary/20">
                                                 #{assignmentOutline.id} - {assignmentOutline.title}
                                               </div>
-                                            )}
+                                            ) : assignment.customTalkTitle ? (
+                                              <div className="text-[10px] text-amber-700 dark:text-amber-300 font-semibold bg-amber-500/10 p-1.5 rounded-md border border-amber-500/20">
+                                                {assignment.customTalkTitle}
+                                              </div>
+                                            ) : null}
                                           </td>
                                         )}
 
@@ -1521,6 +1534,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
                                                 const updated = assignments.map(a => a.id === assignment.id ? { ...a, entranceAttendantId: val || null } : a);
                                                 updateAssignments(updated);
                                               }}
+                                              disabled={assignment.locked}
                                               placeholder="Entrance..."
                                             />
                                             <div className="text-[10px] text-muted-foreground font-bold uppercase pt-1">Auditorium</div>
@@ -1531,6 +1545,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
                                                 const updated = assignments.map(a => a.id === assignment.id ? { ...a, auditoriumAttendantId: val || null } : a);
                                                 updateAssignments(updated);
                                               }}
+                                              disabled={assignment.locked}
                                               placeholder="Auditorium..."
                                             />
                                           </td>
@@ -1549,6 +1564,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
                                                 const updated = assignments.map(a => a.id === assignment.id ? { ...a, micServerIds: newMics } : a);
                                                 updateAssignments(updated);
                                               }}
+                                              disabled={assignment.locked}
                                               placeholder="Mic 1..."
                                             />
                                             <div className="text-[10px] text-muted-foreground font-bold uppercase pt-1">Mic 2</div>
@@ -1561,6 +1577,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
                                                 const updated = assignments.map(a => a.id === assignment.id ? { ...a, micServerIds: newMics } : a);
                                                 updateAssignments(updated);
                                               }}
+                                              disabled={assignment.locked}
                                               placeholder="Mic 2..."
                                             />
                                           </td>
@@ -1571,23 +1588,13 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
                                           <div className="flex items-center justify-end space-x-1">
                                             <Button
                                               size="icon"
-                                              variant={isSwapSource ? "default" : "ghost"}
-                                              onClick={() => handleSwapClick(assignment.id)}
-                                              className="h-10 w-10 min-h-[44px] min-w-[44px]"
-                                              aria-label="Swap assignment speaker"
-                                              title="Swap assignment"
-                                            >
-                                              <Icon name="swap_horiz" className="text-base" />
-                                            </Button>
-                                            <Button
-                                              size="icon"
                                               variant={assignment.locked ? "secondary" : "ghost"}
                                               onClick={() => toggleLock(assignment.id)}
                                               className="h-10 w-10 min-h-[44px] min-w-[44px]"
                                               aria-label={assignment.locked ? "Unlock assignment" : "Lock assignment"}
                                               title={assignment.locked ? "Unlock assignment" : "Lock assignment"}
                                             >
-                                              <Icon name={assignment.locked ? "lock" : "lock_open"} className="text-base" />
+                                              <Icon name="lock" className={`text-base ${assignment.locked ? 'text-amber-500 font-bold' : ''}`} />
                                             </Button>
                                           </div>
                                         </td>

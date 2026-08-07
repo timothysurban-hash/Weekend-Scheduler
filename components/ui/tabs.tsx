@@ -39,13 +39,16 @@ export const TabsTrigger: React.FC<TabsTriggerProps> = ({ value, className = '',
   const ctx = useContext(TabsContext);
   const isActive = ctx?.value === value;
 
+  const hasCustomActiveBg = className.includes('data-[state=active]:') || className.includes('data-[state=active]:bg-');
+
   return (
     <button
       type="button"
+      data-state={isActive ? 'active' : 'inactive'}
       onClick={() => ctx?.onValueChange(value)}
       className={`inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 cursor-pointer ${
         isActive
-          ? 'bg-background text-foreground shadow-xs'
+          ? (hasCustomActiveBg ? '' : 'bg-background text-foreground shadow-xs')
           : 'hover:bg-background/50 hover:text-foreground'
       } ${className}`}
       {...props}

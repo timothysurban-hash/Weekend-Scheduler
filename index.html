@@ -58,13 +58,17 @@
               md: "calc(var(--radius) - 2px)",
               sm: "calc(var(--radius) - 4px)",
             },
+            transitionTimingFunction: {
+              DEFAULT: "cubic-bezier(0.25, 1, 0.5, 1)",
+              smooth: "cubic-bezier(0.25, 1, 0.5, 1)",
+            },
             keyframes: {
               'fade-in': { '0%': { opacity: '0' }, '100%': { opacity: '1' } },
               'pop-in': { '0%': { opacity: '0', transform: 'scale(0.96)' }, '100%': { opacity: '1', transform: 'scale(1)' } },
             },
             animation: {
-              'fade-in': 'fade-in 0.2s ease-out forwards',
-              'pop-in': 'pop-in 0.2s ease-out forwards',
+              'fade-in': 'fade-in 0.2s cubic-bezier(0.25, 1, 0.5, 1) forwards',
+              'pop-in': 'pop-in 0.2s cubic-bezier(0.25, 1, 0.5, 1) forwards',
             }
           }
         }
@@ -72,6 +76,7 @@
     </script>
     <style>
       :root {
+        --ease-smooth: cubic-bezier(0.25, 1, 0.5, 1);
         --background: 210 40% 98%;
         --foreground: 222 47% 11%;
         --card: 0 0% 100%;
@@ -94,26 +99,31 @@
         --radius: 0.5rem;
       }
 
+      *, *::before, *::after {
+        transition-timing-function: var(--ease-smooth);
+        animation-timing-function: var(--ease-smooth);
+      }
+
       .dark {
-        --background: 222 47% 11%;
-        --foreground: 210 40% 98%;
-        --card: 217.2 32.6% 15.3%;
-        --card-foreground: 210 40% 98%;
-        --popover: 217.2 32.6% 15.3%;
-        --popover-foreground: 210 40% 98%;
+        --background: 240 5.9% 10%;
+        --foreground: 0 0% 98%;
+        --card: 240 5.9% 13%;
+        --card-foreground: 0 0% 98%;
+        --popover: 240 5.9% 13%;
+        --popover-foreground: 0 0% 98%;
         --primary: 0 0% 98%;
         --primary-foreground: 240 5.9% 10%;
-        --secondary: 217.2 32.6% 17.5%;
-        --secondary-foreground: 210 40% 98%;
-        --muted: 217.2 32.6% 17.5%;
-        --muted-foreground: 215 20.2% 65.1%;
-        --accent: 217.2 32.6% 17.5%;
-        --accent-foreground: 210 40% 98%;
+        --secondary: 240 3.7% 15.9%;
+        --secondary-foreground: 0 0% 98%;
+        --muted: 240 3.7% 15.9%;
+        --muted-foreground: 240 5% 64.9%;
+        --accent: 240 3.7% 15.9%;
+        --accent-foreground: 0 0% 98%;
         --destructive: 0 62.8% 30.6%;
-        --destructive-foreground: 210 40% 98%;
-        --border: 217.2 32.6% 22%;
-        --input: 217.2 32.6% 22%;
-        --ring: 224.3 76.3% 48%;
+        --destructive-foreground: 0 0% 98%;
+        --border: 240 3.7% 20%;
+        --input: 240 3.7% 20%;
+        --ring: 240 4.9% 83.9%;
       }
 
       body {
@@ -121,7 +131,7 @@
         color: hsl(var(--foreground));
         font-family: 'Satoshi', 'Inter', sans-serif;
         -webkit-tap-highlight-color: transparent;
-        transition: background-color 0.2s ease, color 0.2s ease;
+        transition: background-color 0.2s, color 0.2s;
       }
       
       .no-scrollbar::-webkit-scrollbar {

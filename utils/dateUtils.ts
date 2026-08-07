@@ -1,6 +1,6 @@
 // Independent Date & Scheduling Utilities for Congregation Scheduler
 
-import { DutyRole, Speaker, RoleDefinition } from '../types';
+import { DutyRole, Speaker, RoleDefinition, SpiritualStatus } from '../types';
 import { DEFAULT_ROLES } from '../constants';
 
 /**
@@ -43,9 +43,27 @@ export const formatViewMonth = (date: Date): string => {
 };
 
 /**
+ * Returns default duty qualifications for a given spiritual status.
+ */
+export const getDefaultQualificationsForStatus = (status: SpiritualStatus): DutyRole[] => {
+  switch (status) {
+    case 'elder':
+      return ['chairman', 'speaker', 'conductor', 'reader', 'attendant_entrance', 'attendant_auditorium', 'mic'];
+    case 'ms':
+      return ['chairman', 'speaker', 'reader', 'attendant_entrance', 'attendant_auditorium', 'mic'];
+    case 'publisher':
+      return ['attendant_entrance', 'attendant_auditorium', 'mic'];
+    case 'up':
+      return ['mic'];
+    default:
+      return ['mic'];
+  }
+};
+
+/**
  * Evaluates candidate spiritual status based on tags or spiritualStatus field.
  */
-export const getCandidateStatus = (candidate: Speaker): 'elder' | 'ms' | 'publisher' => {
+export const getCandidateStatus = (candidate: Speaker): SpiritualStatus => {
   if (candidate.spiritualStatus) return candidate.spiritualStatus;
 
   if (candidate.customTags && candidate.customTags.length > 0) {
@@ -56,6 +74,11 @@ export const getCandidateStatus = (candidate: Speaker): 'elder' | 'ms' | 'publis
       return lower === 'ms' || lower.includes('ministerial');
     });
     if (isMS) return 'ms';
+    const isUP = candidate.customTags.some(t => {
+      const lower = t.trim().toLowerCase();
+      return lower === 'up' || lower.includes('unbaptized');
+    });
+    if (isUP) return 'up';
   }
   return 'publisher';
 };
@@ -68,20 +91,18 @@ export const isBrotherQualifiedForRole = (
   roleKey: DutyRole,
   rolesList: RoleDefinition[] = DEFAULT_ROLES
 ): boolean => {
-  // Check explicit qualifications list if populated
-  const hasRoleQual = candidate.qualifications && candidate.qualifications.length > 0
-    ? candidate.qualifications.includes(roleKey)
-    : true;
+  const candidateStatus = getCandidateStatus(candidate);
 
-  if (!hasRoleQual) return false;
+  // Unbaptized Publishers can only handle Microphone
+  if (candidateStatus === 'up') {
+    return roleKey === 'mic';
+  }
 
   // Find role definition or fall back to default rule
   const roleDef = rolesList.find(r => r.key === roleKey);
   const minStatus = roleDef?.minSpiritualStatus || (
     roleKey === 'chairman' || roleKey === 'conductor' || roleKey === 'reader' ? 'ms' : 'publisher'
   );
-
-  const candidateStatus = getCandidateStatus(candidate);
 
   if (minStatus === 'elder') {
     return candidateStatus === 'elder';
@@ -111,8 +132,8 @@ export const isCandidateEligible = (
     return false;
   }
 
-  // Roster check
-  if (rosterIds && rosterIds.length > 0) {
+  // Roster check: if rosterIds is passed, candidate must be activated in rosterIds
+  if (rosterIds !== undefined) {
     if (!rosterIds.includes(candidate.id)) return false;
   }
 

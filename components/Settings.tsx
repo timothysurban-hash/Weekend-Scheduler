@@ -1,5 +1,7 @@
 import React, { useRef, useState } from 'react';
-import { AppSettings } from '../types';
+import { AppSettings, Speaker, SpiritualStatus } from '../types';
+import { INITIAL_SPEAKERS } from '../constants';
+import { getDefaultQualificationsForStatus } from '../utils/dateUtils';
 import { Save, Download, Upload, HardDrive, Info } from 'lucide-react';
 import { DataService } from '../services/dataService';
 import { showToast } from './ui/Toast';
@@ -18,6 +20,7 @@ export const Settings: React.FC<SettingsProps> = ({ settings, saveSettings }) =>
   const [localSettings, setLocalSettings] = useState(settings);
   const [saved, setSaved] = useState(false);
   const [processing, setProcessing] = useState(false);
+  const [bulkText, setBulkText] = useState('');
   const [themeMode, setThemeMode] = useState<'light' | 'dark'>(() => {
     return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
   });
@@ -41,6 +44,78 @@ export const Settings: React.FC<SettingsProps> = ({ settings, saveSettings }) =>
       localStorage.setItem('theme', 'light');
     }
     showToast(`Switched to ${mode === 'dark' ? 'Dark' : 'Light'} Mode`, 'info');
+  };
+
+  const handleBulkImport = async () => {
+    if (!bulkText.trim()) return;
+    setProcessing(true);
+    try {
+      const lines = bulkText.split('\n');
+      const parsedSpeakers: Speaker[] = [];
+
+      lines.forEach((line) => {
+        let trimmed = line.trim();
+        if (!trimmed) return;
+        if (/^group\s*\d+/i.test(trimmed)) return;
+
+        trimmed = trimmed.replace(/^[\*\-\d\.]+\s*/, '').replace(/\*\*/g, '').trim();
+        if (!trimmed) return;
+
+        let status: SpiritualStatus = 'publisher';
+        const lower = trimmed.toLowerCase();
+
+        if (lower.includes('(group overseer)') || lower.includes('(elder)')) {
+          status = 'elder';
+        } else if (lower.includes('(assistant group overseer)') || lower.includes('(ms)')) {
+          status = lower.includes('(ms)') ? 'ms' : 'elder';
+        } else if (lower.includes('(up)')) {
+          status = 'up';
+        }
+
+        const cleanName = trimmed.replace(/\s*\([^)]*\)/g, '').trim();
+        if (!cleanName) return;
+
+        parsedSpeakers.push({
+          id: Math.random().toString(36).substr(2, 9),
+          name: cleanName,
+          congregation: 'Green Heights',
+          isGuest: false,
+          unavailableDates: [],
+          lastAssigned: null,
+          sortOrder: parsedSpeakers.length,
+          spiritualStatus: status,
+          qualifications: getDefaultQualificationsForStatus(status)
+        });
+      });
+
+      if (parsedSpeakers.length === 0) {
+        showToast("No valid brothers found in pasted text.", "error");
+        return;
+      }
+
+      await DataService.saveSpeakers(parsedSpeakers);
+      showToast(`Successfully imported ${parsedSpeakers.length} brothers! Reloading...`, "success");
+      setTimeout(() => window.location.reload(), 1200);
+    } catch (err) {
+      console.error(err);
+      showToast("Error parsing bulk text list.", "error");
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handleResetToInitialSpeakers = async () => {
+    setProcessing(true);
+    try {
+      await DataService.saveSpeakers(INITIAL_SPEAKERS);
+      showToast("Reset roster to standard 28 brothers! Reloading...", "success");
+      setTimeout(() => window.location.reload(), 1200);
+    } catch (err) {
+      console.error(err);
+      showToast("Failed to reset brother roster.", "error");
+    } finally {
+      setProcessing(false);
+    }
   };
 
   const handleDownloadBackup = async () => {
@@ -140,7 +215,7 @@ export const Settings: React.FC<SettingsProps> = ({ settings, saveSettings }) =>
                       value={localSettings.congregationName}
                       onChange={(e) => setLocalSettings({...localSettings, congregationName: e.target.value})}
                       placeholder="e.g. GREEN HEIGHTS"
-                      className="rounded-xl font-medium border-slate-200/90 dark:border-zinc-700/80"
+                      className="bg-slate-50 dark:bg-zinc-800 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 rounded-xl font-semibold border-slate-200/90 dark:border-zinc-700/80"
                     />
                   </div>
                   <div>
@@ -150,7 +225,7 @@ export const Settings: React.FC<SettingsProps> = ({ settings, saveSettings }) =>
                       value={localSettings.locationName || ''}
                       onChange={(e) => setLocalSettings({...localSettings, locationName: e.target.value})}
                       placeholder="e.g. TAYABAS CITY"
-                      className="rounded-xl font-medium border-slate-200/90 dark:border-zinc-700/80"
+                      className="bg-slate-50 dark:bg-zinc-800 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 rounded-xl font-semibold border-slate-200/90 dark:border-zinc-700/80"
                     />
                   </div>
                   <div>
@@ -160,7 +235,7 @@ export const Settings: React.FC<SettingsProps> = ({ settings, saveSettings }) =>
                       value={localSettings.meetingTime || ''}
                       onChange={(e) => setLocalSettings({...localSettings, meetingTime: e.target.value})}
                       placeholder="e.g. SUNDAY 3:00 P.M."
-                      className="rounded-xl font-medium border-slate-200/90 dark:border-zinc-700/80"
+                      className="bg-slate-50 dark:bg-zinc-800 text-slate-900 dark:text-white placeholder:text-slate-400 dark:placeholder:text-slate-500 rounded-xl font-semibold border-slate-200/90 dark:border-zinc-700/80"
                     />
                   </div>
                 </div>
@@ -289,11 +364,48 @@ export const Settings: React.FC<SettingsProps> = ({ settings, saveSettings }) =>
                 variant="outline"
                 onClick={handleImportClick}
                 disabled={processing}
-                className="w-full justify-start rounded-2xl py-3 text-xs font-extrabold border-slate-200 dark:border-zinc-800 text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30"
+                className="w-full justify-start rounded-2xl py-3 text-xs font-extrabold border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-rose-600 dark:text-rose-400 hover:bg-rose-100 dark:hover:bg-rose-950/60"
               >
                 <Upload className="w-4 h-4 mr-2.5 text-rose-600 dark:text-rose-400" />
                 {processing ? 'Processing...' : 'Restore JSON File'}
               </Button>
+            </CardContent>
+          </Card>
+
+          {/* Bulk Brother Roster Import & Reset */}
+          <Card className="rounded-3xl border border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-xs">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center text-lg font-extrabold text-slate-900 dark:text-white">
+                <Icon name="group" className="text-xl mr-2 text-indigo-600 dark:text-indigo-400" />
+                Dynamic Roster Manager
+              </CardTitle>
+              <CardDescription>Paste raw text lists or reset congregation brothers</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <textarea
+                rows={4}
+                placeholder={`Paste raw brother list here... e.g.\nGroup 1\nSurban, James (Group Overseer)\nDayanan, Jhon Mark\nJaballa, Jaymar (MS)\nYago, Alexis James (UP)`}
+                value={bulkText}
+                onChange={(e) => setBulkText(e.target.value)}
+                className="w-full p-3 text-xs font-mono border rounded-2xl bg-slate-50 dark:bg-zinc-800 text-slate-900 dark:text-white border-slate-200 dark:border-zinc-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+              />
+              <div className="flex gap-2">
+                <Button
+                  onClick={handleBulkImport}
+                  disabled={!bulkText.trim() || processing}
+                  className="flex-1 rounded-2xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white"
+                >
+                  Import Pasted List
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleResetToInitialSpeakers}
+                  disabled={processing}
+                  className="rounded-2xl text-xs font-bold border-slate-200 dark:border-zinc-700 bg-slate-50 dark:bg-zinc-800 text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-zinc-700"
+                >
+                  Reset to 28 Brothers
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </div>
