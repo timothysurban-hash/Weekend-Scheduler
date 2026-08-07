@@ -125,27 +125,31 @@ export const DataService = {
   // --- Speakers ---
   getSpeakers: async (): Promise<Speaker[]> => {
     try {
-      const raw = await getIDBData(IDB_KEYS.SPEAKERS, INITIAL_SPEAKERS);
-      if (!Array.isArray(raw) || raw.length === 0) {
-        await DataService.saveSpeakers(INITIAL_SPEAKERS);
-        return INITIAL_SPEAKERS;
+      const raw = await getIDBData(IDB_KEYS.SPEAKERS, []);
+      if (!Array.isArray(raw)) {
+        return [];
       }
       
-      // Auto-migration: Check if IndexedDB has legacy cached data (e.g., sp-1 was named Arceta, John Daryl or missing spiritualStatus)
-      const isLegacyCache = raw.some(s => s.id === 'sp-1' && s.name.includes('Arceta')) ||
-                            raw.some(s => !s.spiritualStatus);
-      
-      if (isLegacyCache) {
-        console.info("Upgrading legacy IndexedDB speaker cache to 28 brothers roster...");
-        await DataService.saveSpeakers(INITIAL_SPEAKERS);
-        return INITIAL_SPEAKERS;
+      // Auto-migration & normalization: Ensure all saved speakers have a valid spiritualStatus without resetting user data
+      let needsSave = false;
+      const valid = raw
+        .filter(isValidSpeaker)
+        .map(s => {
+          if (!s.spiritualStatus) {
+            needsSave = true;
+            return { ...s, spiritualStatus: 'publisher' as const };
+          }
+          return s;
+        });
+
+      if (needsSave) {
+        await DataService.saveSpeakers(valid);
       }
 
-      const valid = raw.filter(isValidSpeaker);
-      return valid.length > 0 ? valid : INITIAL_SPEAKERS;
+      return valid;
     } catch (e) {
-      console.warn("Failed to load speakers, using initial.", e);
-      return INITIAL_SPEAKERS;
+      console.warn("Failed to load speakers, using empty list.", e);
+      return [];
     }
   },
   saveSpeakers: async (speakers: Speaker[]) => {

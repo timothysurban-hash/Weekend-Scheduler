@@ -110,7 +110,10 @@ export const PrintScheduleModal: React.FC<PrintScheduleModalProps> = ({
 
       <div className="w-full max-w-3xl bg-white border border-slate-300 p-8 shadow-2xl rounded-sm print:shadow-none print:border-none print:p-0 print:m-0 print:w-full">
         <div className="text-center mb-6 font-serif uppercase tracking-wide">
-          <h1 className="text-lg font-bold text-black">{settings.congregationName || 'GREEN HEIGHTS CONGREGATION'} - {settings.locationName || 'TAYABAS CITY'}</h1>
+          <h1 className="text-lg font-bold text-black">
+            {settings.congregationName ? settings.congregationName : 'CONGREGATION NAME'}
+            {settings.locationName ? ` - ${settings.locationName}` : ''}
+          </h1>
           <h2 className="text-md font-bold text-black">ARRANGEMENT FOR WEEKEND MEETING</h2>
           <h3 className="text-sm font-semibold text-black">{settings.meetingTime || 'SUNDAY 3:00 P.M.'}</h3>
         </div>

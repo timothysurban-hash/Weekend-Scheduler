@@ -16,8 +16,8 @@ export const DEFAULT_ROLES: RoleDefinition[] = [
 export const DEFAULT_SETTINGS: AppSettings = {
   cooldownMonths: 6,
   maxMonthlyDutiesPerBrother: 3,
-  congregationName: 'GREEN HEIGHTS CONGREGATION',
-  locationName: 'TAYABAS CITY',
+  congregationName: '',
+  locationName: '',
   meetingTime: 'SUNDAY 3:00 P.M.',
   languageMode: 'both',
   authorityRoles: {
@@ -224,7 +224,9 @@ export const INITIAL_OUTLINES: Outline[] = [
   { id: 194, title: "Kung Paano Tayo Nakikinabang sa Karunungan Mula sa Diyos", lastUsed: null, lastSpeakerId: null, lastCongregation: null }
 ];
 
-export const INITIAL_SPEAKERS: Speaker[] = [
+export const INITIAL_SPEAKERS: Speaker[] = [];
+
+export const DEMO_SPEAKERS: Speaker[] = [
   // Group 1
   { id: 'sp-1', name: 'Surban, James', congregation: 'Green Heights', isGuest: false, unavailableDates: [], lastAssigned: null, sortOrder: 0, spiritualStatus: 'elder', qualifications: ['chairman', 'speaker', 'conductor', 'reader', 'attendant_entrance', 'attendant_auditorium', 'mic'] },
   { id: 'sp-2', name: 'Lavado, Joel', congregation: 'Green Heights', isGuest: false, unavailableDates: [], lastAssigned: null, sortOrder: 1, spiritualStatus: 'elder', qualifications: ['chairman', 'speaker', 'conductor', 'reader', 'attendant_entrance', 'attendant_auditorium', 'mic'] },

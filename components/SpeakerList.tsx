@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Speaker, Outline, Assignment, DutyRole, SpiritualStatus } from '../types';
+import { DEMO_SPEAKERS } from '../constants';
 import { isBrotherQualifiedForRole, getCandidateStatus, getDefaultQualificationsForStatus } from '../utils/dateUtils';
 import { MapPin, Trash2, Edit2, Check, ChevronDown } from 'lucide-react';
 import { Button } from './ui/button';
@@ -547,8 +548,40 @@ export const SpeakerList: React.FC<SpeakerListProps> = ({ speakers, outlines: _o
         </DialogFooter>
       </Dialog>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-        {localSpeakers.map((speaker, idx) => {
+      {localSpeakers.length === 0 ? (
+        <div className="py-16 text-center bg-white dark:bg-zinc-900 rounded-3xl border border-slate-200/80 dark:border-zinc-800 p-8 shadow-xs">
+          <div className="max-w-md mx-auto space-y-4">
+            <div className="w-14 h-14 rounded-2xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mx-auto">
+              <Icon name="group" className="text-3xl" />
+            </div>
+            {speakers.length === 0 ? (
+              <>
+                <h3 className="text-lg font-extrabold text-slate-900 dark:text-white">No Brothers Registered Yet</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Your congregation brother roster is currently empty. Add your local brothers to get started with scheduling!
+                </p>
+                <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+                  <Button onClick={() => setIsAdding(true)} className="rounded-2xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white">
+                    Add Brother
+                  </Button>
+                  <Button variant="outline" onClick={() => updateSpeakers(DEMO_SPEAKERS)} className="rounded-2xl text-xs font-bold border-slate-200 dark:border-zinc-700">
+                    Load Sample Demo Roster
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <h3 className="text-lg font-extrabold text-slate-900 dark:text-white">No Matching Brothers Found</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  No brothers match your active search or filter criteria. Try adjusting your filter settings.
+                </p>
+              </>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {localSpeakers.map((speaker, idx) => {
             const lastInfo = getLastAssignmentInfo(speaker);
             const isDeleting = deleteConfirmId === speaker.id;
             const isExiting = exitingId === speaker.id;
@@ -732,6 +765,7 @@ export const SpeakerList: React.FC<SpeakerListProps> = ({ speakers, outlines: _o
             );
         })}
       </div>
+      )}
     </div>
   );
 };

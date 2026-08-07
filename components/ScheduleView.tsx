@@ -507,7 +507,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
       if (!newGuest.name || !guestTargetId) return;
       const guestId = Math.random().toString(36).substr(2, 9);
       const guestSpeaker: Speaker = {
-          id: guestId, name: newGuest.name, congregation: newGuest.congregation || 'Visiting', isGuest: true, unavailableDates: [], lastAssigned: null, sortOrder: 9999
+          id: guestId, name: newGuest.name, congregation: newGuest.congregation || 'Visiting', isGuest: true, unavailableDates: [], lastAssigned: null, sortOrder: 9999, spiritualStatus: 'publisher'
       };
       updateSpeakers([...speakers, guestSpeaker]);
       const updatedAssignments = assignments.map(a => 
