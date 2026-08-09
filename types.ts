@@ -66,6 +66,7 @@ export interface Assignment {
   isSpecialEvent?: boolean; // Assembly / Convention flag
   specialEventTitle?: string;
   locked: boolean;
+  speakerLocked?: boolean;
   note?: string;
   hostSpeakerId?: string | null;
   customTalkTitle?: string;

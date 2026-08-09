@@ -440,15 +440,24 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
           const updatedAssignments = assignments.map(a => {
               if (idsToClear.includes(a.id)) {
                   if (roleFilter === 'all') {
+                    const keepSpeaker = Boolean(a.speakerLocked);
                     return {
                       ...a,
-                      speakerId: null, outlineId: null, hostSpeakerId: null,
+                      speakerId: keepSpeaker ? a.speakerId : null,
+                      outlineId: keepSpeaker ? a.outlineId : null,
+                      hostSpeakerId: keepSpeaker ? a.hostSpeakerId : null,
+                      customTalkTitle: keepSpeaker ? a.customTalkTitle : undefined,
                       chairmanId: null, conductorId: null, readerId: null,
                       entranceAttendantId: null, auditoriumAttendantId: null, micServerIds: []
                     };
                   }
                   const updated = { ...a };
-                  if (roleFilter === 'speaker') { updated.speakerId = null; updated.outlineId = null; updated.hostSpeakerId = null; }
+                  if (roleFilter === 'speaker' && !a.speakerLocked) {
+                    updated.speakerId = null;
+                    updated.outlineId = null;
+                    updated.hostSpeakerId = null;
+                    updated.customTalkTitle = undefined;
+                  }
                   if (roleFilter === 'chairman') updated.chairmanId = null;
                   if (roleFilter === 'conductor') updated.conductorId = null;
                   if (roleFilter === 'reader') updated.readerId = null;
@@ -484,6 +493,21 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
       showToast(`Locked all roles for ${formattedDate}`, 'info');
     } else {
       showToast(`Unlocked roles for ${formattedDate}`, 'info');
+    }
+  };
+
+  const toggleSpeakerLock = (id: string) => {
+    const target = assignments.find(a => a.id === id);
+    if (!target) return;
+    const newSpeakerLocked = !target.speakerLocked;
+    const updated = assignments.map(a => a.id === id ? { ...a, speakerLocked: newSpeakerLocked } : a);
+    updateAssignments(updated);
+
+    const formattedDate = new Date(target.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+    if (newSpeakerLocked) {
+      showToast(`Locked speaker for ${formattedDate}`, 'info');
+    } else {
+      showToast(`Unlocked speaker for ${formattedDate}`, 'info');
     }
   };
 
@@ -1321,33 +1345,56 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
                                  </div>
 
                                  {isRoleInFilter('speaker') && visibleRoles.includes('speaker') && (
-                                   <div>
-                                       <div className="flex justify-between items-center mb-1.5">
-                                           <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Public Talk Speaker</span>
-                                           {!assignment.locked && (
-                                               <button onClick={() => openGuestModal(assignment.id)} className="text-xs font-semibold text-primary flex items-center hover:bg-primary/10 px-2 py-0.5 rounded transition">
-                                                   <Icon name="person_add" className="text-sm mr-1" /> Add Guest
-                                               </button>
-                                           )}
-                                       </div>
-                                       {assignment.locked ? (
-                                           <div className="flex items-center p-3 bg-muted/40 rounded-xl border border-border">
-                                               <div className={`w-2.5 h-2.5 rounded-full mr-3 flex-shrink-0 ${currentSpeaker ? 'bg-primary' : 'bg-muted'}`}></div>
-                                               <div>
-                                                   <div className="text-sm font-semibold text-foreground">{currentSpeaker?.name || 'Unassigned'}</div>
-                                                   {hostSpeaker && <div className="text-xs text-muted-foreground mt-0.5">Invited by: {hostSpeaker.name}</div>}
-                                               </div>
-                                           </div>
-                                       ) : (
-                                           <CustomSelect 
-                                               options={getBrotherCandidateOptions('speaker', assignment.date, assignment.speakerId)}
-                                               value={assignment.speakerId || ''}
-                                               onChange={(val) => handleSpeakerChange(assignment.id, val === '' ? '' : val)}
-                                               placeholder="Select Speaker..."
-                                           />
-                                       )}
-                                   </div>
-                                 )}
+                                    <div>
+                                        <div className="flex justify-between items-center mb-1.5">
+                                            <span className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Public Talk Speaker</span>
+                                            <div className="flex items-center gap-1.5">
+                                                {!assignment.locked && !assignment.speakerLocked && (
+                                                    <button onClick={() => openGuestModal(assignment.id)} className="text-xs font-semibold text-primary flex items-center hover:bg-primary/10 px-2 py-0.5 rounded transition">
+                                                        <Icon name="person_add" className="text-sm mr-1" /> Add Guest
+                                                    </button>
+                                                )}
+                                                {!assignment.locked && (
+                                                    <button 
+                                                      onClick={() => toggleSpeakerLock(assignment.id)}
+                                                      className={`text-xs font-bold flex items-center px-2 py-0.5 rounded-lg border transition cursor-pointer ${
+                                                        assignment.speakerLocked 
+                                                          ? 'bg-amber-500/15 border-amber-500/40 text-amber-600 dark:text-amber-400' 
+                                                          : 'bg-muted/40 hover:bg-muted border-border text-muted-foreground'
+                                                      }`}
+                                                      title={assignment.speakerLocked ? 'Speaker Locked (Click to unlock)' : 'Lock Speaker'}
+                                                    >
+                                                        <Icon name={assignment.speakerLocked ? "lock" : "lock_open"} className={`text-xs mr-1 ${assignment.speakerLocked ? 'text-amber-500' : ''}`} />
+                                                        <span>{assignment.speakerLocked ? 'Locked' : 'Lock'}</span>
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                        {assignment.locked || assignment.speakerLocked ? (
+                                            <div className={`flex items-center p-3 rounded-xl border ${assignment.speakerLocked ? 'bg-amber-500/5 border-amber-500/30' : 'bg-muted/40 border-border'}`}>
+                                                <div className={`w-2.5 h-2.5 rounded-full mr-3 flex-shrink-0 ${currentSpeaker ? 'bg-primary' : 'bg-muted'}`}></div>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="text-sm font-semibold text-foreground flex items-center gap-2">
+                                                      <span className="truncate">{currentSpeaker?.name || 'Unassigned'}</span>
+                                                      {assignment.speakerLocked && (
+                                                        <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-700 dark:text-amber-300 shrink-0">
+                                                          Speaker Locked
+                                                        </span>
+                                                      )}
+                                                    </div>
+                                                    {hostSpeaker && <div className="text-xs text-muted-foreground mt-0.5">Invited by: {hostSpeaker.name}</div>}
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <CustomSelect 
+                                                options={getBrotherCandidateOptions('speaker', assignment.date, assignment.speakerId)}
+                                                value={assignment.speakerId || ''}
+                                                onChange={(val) => handleSpeakerChange(assignment.id, val === '' ? '' : val)}
+                                                placeholder="Select Speaker..."
+                                            />
+                                        )}
+                                    </div>
+                                  )}
 
                                  {isRoleInFilter('speaker') && visibleRoles.includes('speaker') && (
                                    <div>
@@ -1496,37 +1543,54 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
                                         )}
 
                                         {/* Speaker & Theme */}
-                                        {isRoleInFilter('speaker') && visibleRoles.includes('speaker') && (
-                                          <td className="px-3 py-3 align-top space-y-1">
-                                            <CustomSelect
-                                              options={getBrotherCandidateOptions('speaker', assignment.date, assignment.speakerId)}
-                                              value={assignment.speakerId || ''}
-                                              onChange={(val) => handleSpeakerChange(assignment.id, val || '')}
-                                              disabled={assignment.locked}
-                                              placeholder="Speaker..."
-                                            />
-                                            {!assignment.locked && (
-                                              <button
-                                                type="button"
-                                                onClick={() => openGuestModal(assignment.id)}
-                                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold text-primary bg-primary/10 hover:bg-primary/20 border border-primary/20 dark:border-primary/30 transition-all cursor-pointer shadow-2xs mt-1 active:scale-95"
-                                                title="Add visiting guest speaker for this date"
-                                              >
-                                                <Icon name="person_add" className="text-xs text-primary" />
-                                                <span>Add Guest Speaker</span>
-                                              </button>
-                                            )}
-                                            {assignmentOutline ? (
-                                              <div className="text-[10px] text-primary font-semibold bg-primary/10 p-1.5 rounded-md border border-primary/20">
-                                                #{assignmentOutline.id} - {assignmentOutline.title}
-                                              </div>
-                                            ) : assignment.customTalkTitle ? (
-                                              <div className="text-[10px] text-amber-700 dark:text-amber-300 font-semibold bg-amber-500/10 p-1.5 rounded-md border border-amber-500/20">
-                                                {assignment.customTalkTitle}
-                                              </div>
-                                            ) : null}
-                                          </td>
-                                        )}
+                                         {isRoleInFilter('speaker') && visibleRoles.includes('speaker') && (
+                                           <td className="px-3 py-3 align-top space-y-1">
+                                             <CustomSelect
+                                               options={getBrotherCandidateOptions('speaker', assignment.date, assignment.speakerId)}
+                                               value={assignment.speakerId || ''}
+                                               onChange={(val) => handleSpeakerChange(assignment.id, val || '')}
+                                               disabled={assignment.locked || assignment.speakerLocked}
+                                               placeholder="Speaker..."
+                                             />
+                                             <div className="flex items-center gap-1.5 mt-1">
+                                               {!assignment.locked && !assignment.speakerLocked && (
+                                                 <button
+                                                   type="button"
+                                                   onClick={() => openGuestModal(assignment.id)}
+                                                   className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold text-primary bg-primary/10 hover:bg-primary/20 border border-primary/20 dark:border-primary/30 transition-all cursor-pointer shadow-2xs active:scale-95"
+                                                   title="Add visiting guest speaker for this date"
+                                                 >
+                                                   <Icon name="person_add" className="text-xs text-primary" />
+                                                   <span>Add Guest Speaker</span>
+                                                 </button>
+                                               )}
+                                               {!assignment.locked && (
+                                                 <button
+                                                   type="button"
+                                                   onClick={() => toggleSpeakerLock(assignment.id)}
+                                                   className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer border shadow-2xs active:scale-95 ${
+                                                     assignment.speakerLocked
+                                                       ? 'bg-amber-500/15 border-amber-500/40 text-amber-600 dark:text-amber-400 font-bold'
+                                                       : 'bg-muted/40 hover:bg-muted border-border text-muted-foreground'
+                                                   }`}
+                                                   title={assignment.speakerLocked ? 'Speaker Locked (Click to unlock)' : 'Lock Speaker'}
+                                                 >
+                                                   <Icon name={assignment.speakerLocked ? "lock" : "lock_open"} className={`text-xs ${assignment.speakerLocked ? 'text-amber-500' : ''}`} />
+                                                   <span>{assignment.speakerLocked ? 'Locked' : 'Lock'}</span>
+                                                 </button>
+                                               )}
+                                             </div>
+                                             {assignmentOutline ? (
+                                               <div className="text-[10px] text-primary font-semibold bg-primary/10 p-1.5 rounded-md border border-primary/20">
+                                                 #{assignmentOutline.id} - {assignmentOutline.title}
+                                               </div>
+                                             ) : assignment.customTalkTitle ? (
+                                               <div className="text-[10px] text-amber-700 dark:text-amber-300 font-semibold bg-amber-500/10 p-1.5 rounded-md border border-amber-500/20">
+                                                 {assignment.customTalkTitle}
+                                               </div>
+                                             ) : null}
+                                           </td>
+                                         )}
 
                                         {/* Attendants */}
                                         {isRoleInFilter('attendants') && visibleRoles.includes('attendants') && (
