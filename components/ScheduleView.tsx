@@ -170,11 +170,12 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
   const handleCopyBrotherNames = (assignment: Assignment) => {
     const idsToCopy: string[] = [];
 
+    // Order: 1. Entrance Attendant, 2. Auditorium Attendant, 3. Chairman, 4. WT Conductor, 5. Paragraph Reader, 6. Mic Servers
+    if (assignment.entranceAttendantId) idsToCopy.push(assignment.entranceAttendantId);
+    if (assignment.auditoriumAttendantId) idsToCopy.push(assignment.auditoriumAttendantId);
     if (assignment.chairmanId) idsToCopy.push(assignment.chairmanId);
     if (assignment.conductorId) idsToCopy.push(assignment.conductorId);
     if (assignment.readerId) idsToCopy.push(assignment.readerId);
-    if (assignment.entranceAttendantId) idsToCopy.push(assignment.entranceAttendantId);
-    if (assignment.auditoriumAttendantId) idsToCopy.push(assignment.auditoriumAttendantId);
 
     if (assignment.micServerIds && assignment.micServerIds.length > 0) {
       assignment.micServerIds.forEach(id => {
