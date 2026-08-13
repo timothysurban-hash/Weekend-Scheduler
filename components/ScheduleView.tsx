@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Assignment, Speaker, Outline, AppSettings, DutyRole } from '../types';
-import { Download, Calendar as CalendarIcon, ArrowLeftRight, AlertCircle, ArrowDown, ChevronLeft, ChevronRight, Trash2, ChevronDown, Eye, CheckSquare, Square } from 'lucide-react';
+import { Download, Calendar as CalendarIcon, ArrowLeftRight, AlertCircle, ArrowDown, ChevronLeft, ChevronRight, Trash2, ChevronDown, Eye, CheckSquare, Square, Copy } from 'lucide-react';
 import { CustomSelect } from './ui/CustomSelect';
 import { PrintScheduleModal } from './PrintScheduleModal';
 import { isUpcomingSunday, getYearMonth, formatViewMonth, isCandidateEligible } from '../utils/dateUtils';
@@ -165,6 +165,52 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
   const handleToday = () => {
     const today = new Date();
     setViewDate(today);
+  };
+
+  const handleCopyBrotherNames = (assignment: Assignment) => {
+    const idsToCopy: string[] = [];
+
+    if (assignment.chairmanId) idsToCopy.push(assignment.chairmanId);
+    if (assignment.conductorId) idsToCopy.push(assignment.conductorId);
+    if (assignment.readerId) idsToCopy.push(assignment.readerId);
+    if (assignment.entranceAttendantId) idsToCopy.push(assignment.entranceAttendantId);
+    if (assignment.auditoriumAttendantId) idsToCopy.push(assignment.auditoriumAttendantId);
+
+    if (assignment.micServerIds && assignment.micServerIds.length > 0) {
+      assignment.micServerIds.forEach(id => {
+        if (id) idsToCopy.push(id);
+      });
+    }
+
+    if (assignment.customDutyAssignments) {
+      Object.values(assignment.customDutyAssignments).forEach(arr => {
+        if (Array.isArray(arr)) {
+          arr.forEach(id => {
+            if (id) idsToCopy.push(id);
+          });
+        }
+      });
+    }
+
+    const names = idsToCopy
+      .map(id => speakers.find(s => s.id === id)?.name)
+      .filter((name): name is string => Boolean(name && name.trim()));
+
+    if (names.length === 0) {
+      showToast('No assigned brothers found for non-speaker roles on this date.', 'info');
+      return;
+    }
+
+    const textToCopy = names.join('\n');
+    navigator.clipboard.writeText(textToCopy)
+      .then(() => {
+        const formattedDate = new Date(assignment.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+        showToast(`Copied ${names.length} brother ${names.length === 1 ? 'name' : 'names'} for ${formattedDate} to clipboard!`, 'success');
+      })
+      .catch((err) => {
+        console.error('Failed to copy text: ', err);
+        showToast('Failed to copy to clipboard.', 'error');
+      });
   };
 
   const displayedAssignments = assignments.filter(a => {
@@ -1185,6 +1231,17 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
                                      <span className="text-xs text-muted-foreground font-medium">
                                          {new Date(assignment.date).toLocaleDateString(undefined, {weekday: 'long', year: 'numeric'})}
                                      </span>
+                                     <div className="mt-2">
+                                         <button
+                                             type="button"
+                                             onClick={() => handleCopyBrotherNames(assignment)}
+                                             className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 border border-slate-200 dark:border-zinc-700 transition-all cursor-pointer shadow-2xs active:scale-95"
+                                             title="Copy non-speaker brother names to clipboard"
+                                         >
+                                             <Copy className="w-3 h-3 text-slate-500 dark:text-slate-400" />
+                                             <span>Copy Names</span>
+                                         </button>
+                                     </div>
                                  </div>
                                  <div className="flex space-x-2 mr-6">
                                      <Button 
@@ -1492,6 +1549,17 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
                                                 <span className="flex items-center gap-1"><Icon name="warning" className="text-xs" /> Double-booked</span>
                                               </div>
                                             )}
+                                            <div className="mt-3 pt-1">
+                                              <button
+                                                type="button"
+                                                onClick={() => handleCopyBrotherNames(assignment)}
+                                                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 hover:bg-slate-200 dark:bg-zinc-800 dark:hover:bg-zinc-700 border border-slate-200 dark:border-zinc-700 transition-all cursor-pointer shadow-2xs active:scale-95"
+                                                title="Copy non-speaker brother names to clipboard"
+                                              >
+                                                <Copy className="w-3 h-3 text-slate-500 dark:text-slate-400" />
+                                                <span>Copy Names</span>
+                                              </button>
+                                            </div>
                                         </td>
 
                                         {/* Chairman */}
