@@ -9,11 +9,15 @@ interface NavbarProps {
 
 export const Navbar: React.FC<NavbarProps> = ({ currentView, setView }) => {
   const [isDark, setIsDark] = useState(() => {
-    return document.documentElement.classList.contains('dark') ||
-      localStorage.getItem('theme') === 'dark';
+    if (typeof document !== 'undefined') {
+      return document.documentElement.classList.contains('dark') ||
+        localStorage.getItem('theme') === 'dark';
+    }
+    return false;
   });
 
   useEffect(() => {
+    if (typeof document === 'undefined') return;
     if (isDark) {
       document.documentElement.classList.add('dark');
       localStorage.setItem('theme', 'dark');
@@ -93,8 +97,8 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, setView }) => {
       </aside>
 
       {/* Mobile Bottom Navigation */}
-      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[#18181b] border-t border-zinc-800 z-50 px-4 py-2 text-white shadow-xl">
-        <div className="flex justify-between items-center relative">
+      <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-[#18181b] border-t border-zinc-800/90 z-50 px-1 py-1.5 text-white shadow-2xl backdrop-blur-md">
+        <div className="flex justify-around items-center relative">
             {navItems.map((item) => {
               const isActive = currentView === item.id;
               return (
@@ -102,13 +106,13 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, setView }) => {
                   key={item.id}
                   onClick={() => setView(item.id as ViewState)}
                   aria-label={`Navigate to ${item.label}`}
-                  className={`flex flex-col items-center justify-center p-2 rounded-2xl transition-all duration-200 cursor-pointer active:scale-90
-                    ${isActive ? 'text-white font-bold scale-105' : 'text-zinc-400'}`}
+                  className={`flex-1 min-w-0 flex flex-col items-center justify-center py-1 px-1 rounded-xl transition-all duration-200 cursor-pointer active:scale-90 min-h-[48px]
+                    ${isActive ? 'text-white font-bold' : 'text-zinc-400 hover:text-zinc-200'}`}
                 >
-                  <div className={`p-1.5 rounded-xl transition-all duration-200 ${isActive ? 'bg-white/10' : 'bg-transparent'}`}>
-                    <Icon name={item.icon} className="text-xl" />
+                  <div className={`p-1.5 rounded-xl transition-all duration-200 ${isActive ? 'bg-white/15 shadow-xs scale-105' : 'bg-transparent'}`}>
+                    <Icon name={item.icon} className={`text-xl ${isActive ? 'text-white' : 'text-zinc-400'}`} />
                   </div>
-                  <span className={`text-[10px] font-medium mt-0.5 transition-all duration-200 ${isActive ? 'opacity-100 font-bold' : 'opacity-70'}`}>
+                  <span className={`text-[10px] font-semibold mt-0.5 truncate w-full text-center ${isActive ? 'opacity-100 font-extrabold text-white' : 'opacity-70'}`}>
                     {item.label}
                   </span>
                 </button>
@@ -118,13 +122,13 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, setView }) => {
             <button
               onClick={toggleTheme}
               aria-label={isDark ? "Switch to light theme" : "Switch to dark theme"}
-              className="flex flex-col items-center justify-center p-2 text-zinc-400 hover:text-white cursor-pointer active:scale-90"
+              className="flex-1 min-w-0 flex flex-col items-center justify-center py-1 px-1 text-zinc-400 hover:text-white cursor-pointer active:scale-90 min-h-[48px]"
             >
               <div className="p-1.5 rounded-xl bg-transparent">
                 {isDark ? <Icon name="light_mode" className="text-xl text-amber-400" /> : <Icon name="dark_mode" className="text-xl text-indigo-400" />}
               </div>
-              <span className="text-[10px] font-medium mt-0.5 opacity-70">
-                Mode
+              <span className="text-[10px] font-semibold mt-0.5 truncate opacity-70">
+                {isDark ? 'Light' : 'Dark'}
               </span>
             </button>
         </div>

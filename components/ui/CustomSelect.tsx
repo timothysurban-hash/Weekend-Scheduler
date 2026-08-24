@@ -6,7 +6,7 @@ interface Option {
   value: string | number;
   label: string;
   subLabel?: string;
-  status?: 'success' | 'warning' | 'neutral';
+  status?: 'success' | 'warning' | 'danger' | 'neutral';
   statusLabel?: string;
 }
 

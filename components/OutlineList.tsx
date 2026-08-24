@@ -4,10 +4,11 @@ import { Outline, AppSettings, Assignment } from '../types';
 import { Clock, CheckCircle, AlertCircle, Trash2, ArrowUp } from 'lucide-react';
 import { showToast } from './ui/Toast';
 import { Button } from './ui/button';
-import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from './ui/card';
 import { Badge } from './ui/badge';
 import { Input } from './ui/input';
 import { Icon } from './ui/Icon';
+import { parseOutlinesFromContent, createOutlineRecord } from '../domain/outlineImporter';
 
 interface OutlineListProps {
   outlines: Outline[];
@@ -18,6 +19,8 @@ interface OutlineListProps {
 
 export const OutlineList: React.FC<OutlineListProps> = ({ outlines, settings, updateOutlines, assignments }) => {
   const [isAdding, setIsAdding] = useState(false);
+  const [isBulkPasting, setIsBulkPasting] = useState(false);
+  const [bulkPasteText, setBulkPasteText] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [newOutline, setNewOutline] = useState<{id: string, title: string}>({ id: '', title: '' });
   
@@ -74,41 +77,28 @@ export const OutlineList: React.FC<OutlineListProps> = ({ outlines, settings, up
     reader.onload = (evt) => {
       try {
         const text = evt.target?.result as string;
-        if (!text) return;
+        if (!text) {
+          showToast("The selected file is empty.", "error");
+          setImportMessage({ text: "The selected file is empty.", isError: true });
+          return;
+        }
 
-        const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-        let updatedOutlines = [...outlines];
-        let importedCount = 0;
-
-        lines.forEach(line => {
-          const parts = line.split(/,|\t/).map(p => p.replace(/^"|"$/g, '').trim());
-          if (parts.length < 2) return;
-          const idNum = parseInt(parts[0], 10);
-          const title = parts[1];
-          if (isNaN(idNum) || !title || title.toLowerCase() === 'title') return;
-
-          const existingIdx = updatedOutlines.findIndex(o => o.id === idNum);
-          if (existingIdx !== -1) {
-            updatedOutlines[existingIdx] = { ...updatedOutlines[existingIdx], title };
-          } else {
-            updatedOutlines.push({
-              id: idNum,
-              title,
-              lastUsed: null,
-              lastSpeakerId: null,
-              lastCongregation: null
-            });
-          }
-          importedCount++;
-        });
-
-        updateOutlines(updatedOutlines.sort((a, b) => a.id - b.id));
-        setImportMessage({ text: `Import successful! Processed ${importedCount} outlines.`, isError: false });
-        setTimeout(() => setImportMessage(null), 3000);
+        const result = parseOutlinesFromContent(text, outlines);
+        if (result.success) {
+          updateOutlines(result.outlines);
+          showToast(result.message, "success");
+          setImportMessage({ text: result.message, isError: false });
+          setTimeout(() => setImportMessage(null), 4000);
+        } else {
+          showToast(result.message, "error");
+          setImportMessage({ text: result.message, isError: true });
+          setTimeout(() => setImportMessage(null), 6000);
+        }
       } catch (error) {
-        console.error("Error parsing CSV:", error);
+        console.error("Error parsing outline file:", error);
+        showToast("Failed to read the file. Please ensure it is a valid CSV or text file.", "error");
         setImportMessage({ text: "Failed to read the file. Please ensure it is a valid CSV or text file.", isError: true });
-        setTimeout(() => setImportMessage(null), 5000);
+        setTimeout(() => setImportMessage(null), 6000);
       }
       if (e.target) e.target.value = '';
     };
@@ -142,25 +132,35 @@ export const OutlineList: React.FC<OutlineListProps> = ({ outlines, settings, up
   };
 
   const handleAdd = () => {
-      const idNum = parseInt(newOutline.id);
-      if (!newOutline.id || !newOutline.title || isNaN(idNum)) return;
+    const res = createOutlineRecord(newOutline.id, newOutline.title, outlines);
+    if (res.error || !res.outline) {
+      showToast(res.error || "Failed to add outline.", 'error');
+      return;
+    }
 
-      if (outlines.find(o => o.id === idNum)) {
-          showToast("Outline ID already exists.", 'error');
-          return;
-      }
+    const updated = [...outlines, res.outline].sort((a, b) => a.id - b.id);
+    updateOutlines(updated);
+    showToast(`Outline #${res.outline.id} added successfully!`, 'success');
+    setIsAdding(false);
+    setNewOutline({ id: '', title: '' });
+  };
 
-      const outline: Outline = {
-          id: idNum,
-          title: newOutline.title,
-          lastUsed: null,
-          lastSpeakerId: null,
-          lastCongregation: null
-      };
-      
-      updateOutlines([...outlines, outline]);
-      setIsAdding(false);
-      setNewOutline({ id: '', title: '' });
+  const handleBulkPasteImport = () => {
+    if (!bulkPasteText.trim()) return;
+
+    const result = parseOutlinesFromContent(bulkPasteText, outlines);
+    if (result.success) {
+      updateOutlines(result.outlines);
+      showToast(result.message, 'success');
+      setImportMessage({ text: result.message, isError: false });
+      setTimeout(() => setImportMessage(null), 5000);
+      setBulkPasteText('');
+      setIsBulkPasting(false);
+    } else {
+      showToast(result.message, 'error');
+      setImportMessage({ text: result.message, isError: true });
+      setTimeout(() => setImportMessage(null), 6000);
+    }
   };
 
   const handleDeleteClick = (id: number) => {
@@ -188,9 +188,9 @@ export const OutlineList: React.FC<OutlineListProps> = ({ outlines, settings, up
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-1">
-        <div className="flex items-center gap-3 w-full sm:w-auto">
-          <div className="relative flex-1 sm:w-80">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 py-1">
+        <div className="flex items-center gap-2.5 w-full sm:w-auto">
+          <div className="relative w-full sm:w-72">
             <Icon name="search" className="text-lg text-slate-400 dark:text-slate-500 absolute left-4 top-2.5" />
             <input 
               type="text"
@@ -207,10 +207,10 @@ export const OutlineList: React.FC<OutlineListProps> = ({ outlines, settings, up
           </div>
         </div>
         
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
           <input 
             type="file" 
-            accept=".xlsx, .xls, .csv" 
+            accept=".csv, .tsv, .txt, .json, .xlsx, .xls" 
             hidden 
             ref={fileInputRef} 
             onChange={handleImport} 
@@ -218,22 +218,34 @@ export const OutlineList: React.FC<OutlineListProps> = ({ outlines, settings, up
           <button
             onClick={handleExport}
             title="Export to CSV"
-            className="px-4 py-2.5 rounded-full bg-white dark:bg-zinc-800 text-slate-700 dark:text-slate-200 font-bold text-xs border border-slate-200/80 dark:border-zinc-700/60 shadow-xs hover:bg-slate-50 dark:hover:bg-zinc-700 transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+            className="px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-full bg-white dark:bg-zinc-800 text-slate-700 dark:text-slate-200 font-bold text-xs border border-slate-200/80 dark:border-zinc-700/60 shadow-xs hover:bg-slate-50 dark:hover:bg-zinc-700 transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
           >
             <Icon name="download" className="text-base" />
             <span>Export</span>
           </button>
           <button
             onClick={() => fileInputRef.current?.click()}
-            title="Import Excel or CSV File"
-            className="px-4 py-2.5 rounded-full bg-white dark:bg-zinc-800 text-slate-700 dark:text-slate-200 font-bold text-xs border border-slate-200/80 dark:border-zinc-700/60 shadow-xs hover:bg-slate-50 dark:hover:bg-zinc-700 transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
+            title="Import Excel, CSV, or Text File"
+            className="px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-full bg-white dark:bg-zinc-800 text-slate-700 dark:text-slate-200 font-bold text-xs border border-slate-200/80 dark:border-zinc-700/60 shadow-xs hover:bg-slate-50 dark:hover:bg-zinc-700 transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap"
           >
             <Icon name="upload" className="text-base" />
             <span>Import</span>
           </button>
           <button
-            onClick={() => setIsAdding(true)}
-            className="px-5 py-2.5 rounded-full bg-[#18181b] dark:bg-white text-white dark:text-zinc-950 font-extrabold text-xs shadow-md hover:scale-[1.02] active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer border border-zinc-800 dark:border-zinc-200 whitespace-nowrap"
+            onClick={() => { setIsBulkPasting(prev => !prev); setIsAdding(false); }}
+            title="Paste Outline List"
+            className={`px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-full font-bold text-xs border shadow-xs transition-all flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
+              isBulkPasting
+                ? 'bg-indigo-600 border-indigo-600 text-white'
+                : 'bg-white dark:bg-zinc-800 text-slate-700 dark:text-slate-200 border-slate-200/80 dark:border-zinc-700/60 hover:bg-slate-50 dark:hover:bg-zinc-700'
+            }`}
+          >
+            <Icon name="content_paste" className="text-base" />
+            <span>Paste Outlines</span>
+          </button>
+          <button
+            onClick={() => { setIsAdding(prev => !prev); setIsBulkPasting(false); }}
+            className="px-4 sm:px-5 py-2 sm:py-2.5 rounded-full bg-[#18181b] dark:bg-white text-white dark:text-zinc-950 font-extrabold text-xs shadow-md hover:scale-[1.02] active:scale-95 transition-all flex items-center gap-1.5 cursor-pointer border border-zinc-800 dark:border-zinc-200 whitespace-nowrap"
           >
             <Icon name="add" className="text-base" />
             <span>New Outline</span>
@@ -244,6 +256,61 @@ export const OutlineList: React.FC<OutlineListProps> = ({ outlines, settings, up
         <p className={`text-xs font-semibold px-4 py-2 rounded-xl ${importMessage.isError ? 'bg-rose-50 text-rose-600 dark:bg-rose-950/40 dark:text-rose-300' : 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-300'}`}>
           {importMessage.text}
         </p>
+      )}
+
+      {isBulkPasting && (
+        <Card className="rounded-3xl border border-slate-200/80 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm">
+          <CardHeader className="pb-3">
+            <div className="flex justify-between items-center">
+              <div>
+                <CardTitle className="flex items-center text-lg font-extrabold text-slate-900 dark:text-white">
+                  <Icon name="content_paste" className="text-xl mr-2 text-indigo-600 dark:text-indigo-400" />
+                  Paste Outline List
+                </CardTitle>
+                <CardDescription>
+                  Paste numbered outlines (e.g. &quot;1. Gaano Mo Kakilala ang Diyos?&quot;) or CSV/TSV data below to import or update in bulk.
+                </CardDescription>
+              </div>
+              <button 
+                onClick={() => setIsBulkPasting(false)}
+                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer p-1"
+                aria-label="Close paste panel"
+              >
+                <Icon name="close" className="text-xl" />
+              </button>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <textarea
+              rows={8}
+              placeholder={`Paste your outline list here... e.g.\n1. Gaano Mo Kakilala ang Diyos?\n2. Ikaw Ba ay Maliligtas sa mga Huling Araw?\n3. Sumabay sa Pagsulong ng Nagkakaisang Organisasyon ni Jehova\n...\n194. Kung Paano Tayo Nakikinabang sa Karunungan Mula sa Diyos`}
+              value={bulkPasteText}
+              onChange={(e) => setBulkPasteText(e.target.value)}
+              className="w-full p-4 text-xs font-mono border rounded-2xl bg-slate-50 dark:bg-zinc-800 text-slate-900 dark:text-white border-slate-200 dark:border-zinc-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+            />
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                Existing outlines will have their titles updated while preserving their assignment history.
+              </span>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => { setBulkPasteText(''); setIsBulkPasting(false); }}
+                  className="rounded-2xl text-xs font-bold"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleBulkPasteImport}
+                  disabled={!bulkPasteText.trim()}
+                  className="rounded-2xl text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white"
+                >
+                  Import Pasted Outlines
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
 
@@ -285,8 +352,8 @@ export const OutlineList: React.FC<OutlineListProps> = ({ outlines, settings, up
           </Card>
       )}
 
-      {/* Mobile Card View (Visible on < MD) */}
-      <div className="md:hidden space-y-3 pb-4">
+      {/* Mobile/Tablet Card View (Visible on < LG) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:hidden gap-3 pb-4">
         {sortedOutlines.length > 0 ? (
              sortedOutlines.map((outline, idx) => {
                  const effectiveLastUsed = getEffectiveLastUsed(outline);
@@ -299,14 +366,14 @@ export const OutlineList: React.FC<OutlineListProps> = ({ outlines, settings, up
                     <Card 
                         key={outline.id} 
                         style={isExiting ? { animationDelay: '0s' } : { animationDelay: `${idx * 0.02}s` }}
-                        className={`transition-all duration-300 relative overflow-hidden
+                        className={`transition-all duration-300 relative overflow-hidden rounded-2xl
                         ${isExiting 
                             ? 'animate-fade-out-up pointer-events-none opacity-0' 
                             : 'animate-in fade-in duration-200'}`}
                     >
                       <CardContent className="p-4">
                         <div className="flex items-start justify-between mb-2">
-                             <div className="flex items-start gap-3">
+                             <div className="flex items-start gap-2.5">
                                  <Badge variant="default" className="text-xs font-bold min-w-[2.5rem] justify-center mt-0.5">
                                     #{outline.id}
                                  </Badge>
@@ -314,17 +381,17 @@ export const OutlineList: React.FC<OutlineListProps> = ({ outlines, settings, up
                              </div>
                              <button
                                 onClick={() => handleDeleteClick(outline.id)}
-                                className={`p-2 rounded-lg transition-colors ${isDeleting ? 'bg-destructive/10 text-destructive' : 'text-muted-foreground hover:text-destructive'}`}
+                                className={`p-2 rounded-lg transition-colors shrink-0 ${isDeleting ? 'bg-destructive/10 text-destructive' : 'text-muted-foreground hover:text-destructive'}`}
                              >
                                  <Trash2 className="w-4 h-4" />
                              </button>
                         </div>
-                        <div className="flex items-center justify-between mt-4 pt-3 border-t border-border">
+                        <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-border">
                              <div className="flex items-center text-xs text-muted-foreground">
                                   <Clock className="w-3.5 h-3.5 mr-1.5" />
                                   {effectiveLastUsed ? new Date(effectiveLastUsed).toLocaleDateString() : 'Never'}
                              </div>
-                             <div className={`flex items-center px-2 py-1 rounded-full text-[10px] font-bold ${status.color}`}>
+                             <div className={`flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${status.color}`}>
                                   <StatusIcon className="w-3 h-3 mr-1" />
                                   {status.label}
                              </div>
@@ -334,14 +401,14 @@ export const OutlineList: React.FC<OutlineListProps> = ({ outlines, settings, up
                  );
              })
         ) : (
-            <Card className="py-12 text-center text-muted-foreground text-sm border-dashed">
+            <Card className="col-span-full py-12 text-center text-muted-foreground text-sm border-dashed">
                 No outlines found matching "{searchTerm}"
             </Card>
         )}
       </div>
 
-      {/* Desktop Table View (Visible on MD+) */}
-      <Card className="hidden md:block overflow-hidden rounded-3xl border border-slate-200/80 dark:border-zinc-800/80 bg-white dark:bg-zinc-900 shadow-xs">
+      {/* Desktop Table View (Visible on LG+) */}
+      <Card className="hidden lg:block overflow-hidden rounded-3xl border border-slate-200/80 dark:border-zinc-800/80 bg-white dark:bg-zinc-900 shadow-xs">
         <div className="overflow-x-auto">
           <table className="min-w-full">
               <thead className="bg-muted/40">

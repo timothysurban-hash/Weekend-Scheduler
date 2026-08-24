@@ -3,6 +3,15 @@ import { Outline, Speaker, AppSettings, RoleDefinition } from './types';
 
 export const PRESET_TAGS = ['Elder', 'MS'];
 
+export const ALL_DASHBOARD_ROLES = [
+  { key: 'chairman', label: 'Chairman' },
+  { key: 'conductor', label: 'WT Conductor' },
+  { key: 'reader', label: 'WT Reader' },
+  { key: 'speaker', label: 'Public Speaker' },
+  { key: 'attendants', label: 'Attendants' },
+  { key: 'mic', label: 'Mic Servers' }
+];
+
 export const DEFAULT_ROLES: RoleDefinition[] = [
   { id: 'role-chairman', key: 'chairman', name: 'Chairman', tagalogName: 'Tagapangulo', desc: 'Presides over the Weekend Meeting & introduces speakers.', category: 'meeting_conduct', minSpiritualStatus: 'ms', slotCapacity: 1, isActive: true, isSystemDefault: true },
   { id: 'role-speaker', key: 'speaker', name: 'Public Speaker', tagalogName: 'Tagapagsalita', desc: 'Delivers the 30-minute public discourse.', category: 'meeting_conduct', minSpiritualStatus: 'publisher', slotCapacity: 1, isActive: true, isSystemDefault: true },

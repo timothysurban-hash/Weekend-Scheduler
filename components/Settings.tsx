@@ -2,14 +2,14 @@ import React, { useRef, useState } from 'react';
 import { AppSettings, Speaker, SpiritualStatus } from '../types';
 import { DEMO_SPEAKERS } from '../constants';
 import { getDefaultQualificationsForStatus } from '../utils/dateUtils';
-import { Save, Download, Upload, HardDrive, Info } from 'lucide-react';
-import { DataService } from '../services/dataService';
+import { scheduleRepository } from '../services/scheduleRepository';
 import { showToast } from './ui/Toast';
 import { Button } from './ui/button';
 import { Card, CardHeader, CardTitle, CardContent, CardDescription } from './ui/card';
 import { Input } from './ui/input';
 import { Icon } from './ui/Icon';
 import { CustomSelect } from './ui/CustomSelect';
+import { Save, Info, HardDrive, Download, Upload } from 'lucide-react';
 
 interface SettingsProps {
   settings: AppSettings;
@@ -22,7 +22,10 @@ export const Settings: React.FC<SettingsProps> = ({ settings, saveSettings }) =>
   const [processing, setProcessing] = useState(false);
   const [bulkText, setBulkText] = useState('');
   const [themeMode, setThemeMode] = useState<'light' | 'dark'>(() => {
-    return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+    if (typeof document !== 'undefined') {
+      return document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+    }
+    return 'light';
   });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -93,7 +96,7 @@ export const Settings: React.FC<SettingsProps> = ({ settings, saveSettings }) =>
         return;
       }
 
-      await DataService.saveSpeakers(parsedSpeakers);
+      await scheduleRepository.saveSpeakers(parsedSpeakers);
       showToast(`Successfully imported ${parsedSpeakers.length} brothers! Reloading...`, "success");
       setTimeout(() => window.location.reload(), 1200);
     } catch (err) {
@@ -108,7 +111,7 @@ export const Settings: React.FC<SettingsProps> = ({ settings, saveSettings }) =>
     if (!window.confirm("Are you sure you want to clear all brothers from your roster?")) return;
     setProcessing(true);
     try {
-      await DataService.saveSpeakers([]);
+      await scheduleRepository.saveSpeakers([]);
       showToast("Cleared all brothers from roster. Reloading...", "info");
       setTimeout(() => window.location.reload(), 1200);
     } catch (err) {
@@ -122,7 +125,7 @@ export const Settings: React.FC<SettingsProps> = ({ settings, saveSettings }) =>
   const handleLoadDemoSpeakers = async () => {
     setProcessing(true);
     try {
-      await DataService.saveSpeakers(DEMO_SPEAKERS);
+      await scheduleRepository.saveSpeakers(DEMO_SPEAKERS);
       showToast("Loaded sample 28 brothers roster! Reloading...", "success");
       setTimeout(() => window.location.reload(), 1200);
     } catch (err) {
@@ -136,7 +139,7 @@ export const Settings: React.FC<SettingsProps> = ({ settings, saveSettings }) =>
   const handleDownloadBackup = async () => {
     setProcessing(true);
     try {
-        const backup = await DataService.createBackup();
+        const backup = await scheduleRepository.createBackup();
         const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -177,7 +180,7 @@ export const Settings: React.FC<SettingsProps> = ({ settings, saveSettings }) =>
             if (typeof result !== 'string') throw new Error("File read error");
             
             const json = JSON.parse(result);
-            const res = await DataService.restoreBackup(json);
+            const res = await scheduleRepository.restoreBackup(json);
             if (res.success && res.counts) {
                 const { assignments, speakers, roles, hasAuthorityRoles } = res.counts;
                 const authMsg = hasAuthorityRoles ? "Authority Roles Set" : "No Authority Roles";

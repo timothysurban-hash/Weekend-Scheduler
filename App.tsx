@@ -1,14 +1,16 @@
-import { useState, useEffect } from 'react';
-import { DataService } from './services/dataService';
+import { useState, useEffect, lazy, Suspense } from 'react';
+import { scheduleRepository } from './services/scheduleRepository';
 import { ViewState, Assignment, Speaker, Outline, AppSettings } from './types';
 import { DEFAULT_SETTINGS } from './constants';
 import { Navbar } from './components/Navbar';
 import { ScheduleView } from './components/ScheduleView';
-import { SpeakerList } from './components/SpeakerList';
-import { RoleRulesView } from './components/RoleRulesView';
-import { OutlineList } from './components/OutlineList';
-import { Settings } from './components/Settings';
 import { ToastContainer } from './components/ui/Toast';
+
+// Lazy-loaded route views for optimal bundle splitting and fast initial paint
+const SpeakerList = lazy(() => import('./components/SpeakerList').then(m => ({ default: m.SpeakerList })));
+const RoleRulesView = lazy(() => import('./components/RoleRulesView').then(m => ({ default: m.RoleRulesView })));
+const OutlineList = lazy(() => import('./components/OutlineList').then(m => ({ default: m.OutlineList })));
+const Settings = lazy(() => import('./components/Settings').then(m => ({ default: m.Settings })));
 
 function App() {
   const [currentView, setCurrentView] = useState<ViewState>('schedule');
@@ -29,21 +31,15 @@ function App() {
     }
   }, []);
 
-  // Load Initial Data Async
+  // Load Initial Data Async via ScheduleRepository
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [loadedAssignments, loadedSpeakers, loadedOutlines, loadedSettings] = await Promise.all([
-          DataService.getAssignments(),
-          DataService.getSpeakers(),
-          DataService.getOutlines(),
-          DataService.getSettings()
-        ]);
-
-        setAssignments(loadedAssignments);
-        setSpeakers(loadedSpeakers);
-        setOutlines(loadedOutlines);
-        setSettings(loadedSettings);
+        const data = await scheduleRepository.loadAll();
+        setAssignments(data.assignments);
+        setSpeakers(data.speakers);
+        setOutlines(data.outlines);
+        setSettings(data.settings);
       } catch (error) {
         console.error("Failed to load application data", error);
       } finally {
@@ -57,32 +53,25 @@ function App() {
   const handleUpdateAssignments = (newAssignments: Assignment[]) => {
     const freshArray = Array.isArray(newAssignments) ? [...newAssignments] : [];
     setAssignments(freshArray);
-    DataService.saveAssignments(freshArray);
+    scheduleRepository.saveAssignments(freshArray);
   };
 
   const handleUpdateSpeakers = (newSpeakers: Speaker[]) => {
     setSpeakers(newSpeakers);
-    DataService.saveSpeakers(newSpeakers);
+    scheduleRepository.saveSpeakers(newSpeakers);
   };
 
   const handleUpdateOutlines = (newOutlines: Outline[]) => {
     setOutlines(newOutlines);
-    DataService.saveOutlines(newOutlines);
+    scheduleRepository.saveOutlines(newOutlines);
   };
 
-  const handleUpdateSettings = (newSettings: AppSettings) => {
+  const handleUpdateSettings = async (newSettings: AppSettings) => {
+    const previousCongName = settings.congregationName;
     setSettings(newSettings);
-    DataService.saveSettings(newSettings);
-
-    const newCongName = newSettings.congregationName?.trim();
-    if (newCongName && newCongName !== settings.congregationName) {
-      setSpeakers(prevSpeakers => {
-        const updated = prevSpeakers.map(sp => 
-          sp.isGuest ? sp : { ...sp, congregation: newCongName }
-        );
-        DataService.saveSpeakers(updated);
-        return updated;
-      });
+    const { updatedSpeakers } = await scheduleRepository.saveSettings(newSettings, previousCongName);
+    if (updatedSpeakers) {
+      setSpeakers(updatedSpeakers);
     }
   };
 
@@ -106,66 +95,77 @@ function App() {
   }
 
   return (
-    <div className="w-screen h-screen bg-[#18181b] overflow-hidden flex p-2 md:p-3 gap-3 font-sans antialiased text-slate-900 dark:text-slate-100">
+    <div className="w-screen h-screen bg-[#18181b] overflow-hidden flex p-0 sm:p-2 md:p-3 gap-0 sm:gap-2 md:gap-3 font-sans antialiased text-slate-900 dark:text-slate-100">
       
       {/* Sidebar Navigation */}
       <Navbar currentView={currentView} setView={setCurrentView} />
       
-      {/* Rounded Square Main Page Content Area */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden relative bg-white dark:bg-[#14151b] rounded-[32px] border border-slate-200/80 dark:border-zinc-800/80 shadow-xl">
+      {/* Main Page Content Area */}
+      <div className="flex-1 flex flex-col h-full overflow-hidden relative bg-white dark:bg-[#14151b] rounded-none sm:rounded-2xl md:rounded-[32px] border-0 sm:border border-slate-200/80 dark:border-zinc-800/80 shadow-xl">
         
         {/* Mobile Header */}
-        <header className="md:hidden px-4 py-4 bg-white dark:bg-[#14151b] border-b border-slate-100 dark:border-zinc-800/60 flex justify-between items-center text-slate-900 dark:text-white">
-           <h1 className="text-lg font-bold">{getViewTitle()}</h1>
+        <header className="md:hidden px-4 py-3.5 bg-white dark:bg-[#14151b] border-b border-slate-100 dark:border-zinc-800/60 flex justify-between items-center text-slate-900 dark:text-white shrink-0">
+           <div className="flex items-center gap-2.5">
+             <div className="w-8 h-8 rounded-xl bg-[#fef9c3] text-zinc-950 flex items-center justify-center font-black shadow-xs shrink-0">
+               <span className="text-base font-black">📅</span>
+             </div>
+             <h1 className="text-base font-extrabold tracking-tight truncate">{getViewTitle()}</h1>
+           </div>
         </header>
 
-        {/* Scrollable Main Content - Hidden Scrollbar */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-8 no-scrollbar bg-slate-50/50 dark:bg-[#111218]">
+        {/* Scrollable Main Content */}
+        <main className="flex-1 overflow-y-auto p-3 sm:p-4 md:p-8 pb-28 md:pb-8 no-scrollbar bg-slate-50/50 dark:bg-[#111218]">
           <div className="w-full max-w-full">
-            <div key={currentView} className="animate-fade-in">
-              {currentView === 'schedule' && (
-                <ScheduleView 
-                  assignments={assignments}
-                  speakers={speakers}
-                  outlines={outlines}
-                  settings={settings}
-                  updateAssignments={handleUpdateAssignments}
-                  updateSpeakers={handleUpdateSpeakers}
-                />
-              )}
-              {currentView === 'speakers' && (
-                <SpeakerList 
-                  speakers={speakers}
-                  outlines={outlines}
-                  updateSpeakers={handleUpdateSpeakers}
-                  assignments={assignments}
-                  defaultCongregation={settings.congregationName}
-                />
-              )}
-              {currentView === 'roles' && (
-                <RoleRulesView 
-                  speakers={speakers}
-                  assignments={assignments}
-                  settings={settings}
-                  saveSettings={handleUpdateSettings}
-                  updateAssignments={handleUpdateAssignments}
-                />
-              )}
-              {currentView === 'outlines' && (
-                <OutlineList 
-                  outlines={outlines}
-                  settings={settings}
-                  updateOutlines={handleUpdateOutlines}
-                  assignments={assignments}
-                />
-              )}
-              {currentView === 'settings' && (
-                <Settings 
-                  settings={settings}
-                  saveSettings={handleUpdateSettings}
-                />
-              )}
-            </div>
+            <Suspense fallback={
+              <div className="flex py-20 items-center justify-center">
+                <div className="text-sm font-semibold text-muted-foreground animate-pulse">Loading view...</div>
+              </div>
+            }>
+              <div key={currentView} className="animate-fade-in">
+                {currentView === 'schedule' && (
+                  <ScheduleView 
+                    assignments={assignments}
+                    speakers={speakers}
+                    outlines={outlines}
+                    settings={settings}
+                    updateAssignments={handleUpdateAssignments}
+                    updateSpeakers={handleUpdateSpeakers}
+                  />
+                )}
+                {currentView === 'speakers' && (
+                  <SpeakerList 
+                    speakers={speakers}
+                    outlines={outlines}
+                    updateSpeakers={handleUpdateSpeakers}
+                    assignments={assignments}
+                    defaultCongregation={settings.congregationName}
+                  />
+                )}
+                {currentView === 'roles' && (
+                  <RoleRulesView 
+                    speakers={speakers}
+                    assignments={assignments}
+                    settings={settings}
+                    saveSettings={handleUpdateSettings}
+                    updateAssignments={handleUpdateAssignments}
+                  />
+                )}
+                {currentView === 'outlines' && (
+                  <OutlineList 
+                    outlines={outlines}
+                    settings={settings}
+                    updateOutlines={handleUpdateOutlines}
+                    assignments={assignments}
+                  />
+                )}
+                {currentView === 'settings' && (
+                  <Settings 
+                    settings={settings}
+                    saveSettings={handleUpdateSettings}
+                  />
+                )}
+              </div>
+            </Suspense>
           </div>
         </main>
       </div>

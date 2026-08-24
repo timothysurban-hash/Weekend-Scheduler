@@ -21,6 +21,16 @@ const ROLE_TAB_ICONS: Record<string, string> = {
   mic: 'mic'
 };
 
+const ROLE_TAB_SHORT_NAMES: Record<string, string> = {
+  chairman: 'Chairman',
+  speaker: 'Speaker',
+  conductor: 'Conductor',
+  reader: 'Reader',
+  attendant_entrance: 'Entrance',
+  attendant_auditorium: 'Auditorium',
+  mic: 'Mic Server'
+};
+
 interface RoleRulesViewProps {
   speakers: Speaker[];
   assignments: Assignment[];
@@ -170,30 +180,33 @@ export const RoleRulesView: React.FC<RoleRulesViewProps> = ({
       </div>
 
       <Tabs value={selectedRole} onValueChange={(val) => setSelectedRole(val as DutyRole)}>
-        <TabsList className="w-full flex justify-start overflow-x-auto h-auto p-2 bg-slate-100/90 dark:bg-zinc-800/60 rounded-3xl border border-slate-200/80 dark:border-zinc-700/60 gap-2">
+        <TabsList className="w-full grid grid-cols-4 sm:grid-cols-4 md:flex md:justify-start md:overflow-x-auto h-auto p-1.5 sm:p-2 bg-slate-100/90 dark:bg-zinc-800/60 rounded-3xl border border-slate-200/80 dark:border-zinc-700/60 gap-1.5 sm:gap-2">
           {roles.map(def => {
             const isTabActive = selectedRole === def.key;
             return (
               <TabsTrigger
                 key={def.key}
                 value={def.key}
-                className={`group py-3.5 px-5 text-xs font-extrabold whitespace-nowrap cursor-pointer rounded-2xl transition-all flex flex-col items-center justify-center gap-1 min-w-[105px] border ${
+                className={`group py-2 sm:py-3.5 px-1.5 sm:px-4 text-[10px] sm:text-xs font-extrabold whitespace-nowrap cursor-pointer rounded-2xl transition-all flex flex-col items-center justify-center gap-0.5 sm:gap-1 min-w-0 md:min-w-[105px] border ${
                   isTabActive
-                    ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-white border-slate-200/90 dark:border-zinc-700/80 shadow-lg shadow-slate-200/80 dark:shadow-black/60 scale-105 z-10'
+                    ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-white border-slate-200/90 dark:border-zinc-700/80 shadow-md sm:shadow-lg shadow-slate-200/80 dark:shadow-black/60 scale-[1.02] sm:scale-105 z-10'
                     : 'bg-transparent text-slate-500 dark:text-slate-400 border-transparent hover:bg-white/60 dark:hover:bg-zinc-800/40 hover:text-slate-800 dark:hover:text-slate-200'
                 }`}
               >
                 <Icon 
                   name={ROLE_TAB_ICONS[def.key] || 'settings'} 
-                  className={`text-2xl transition-all ${
+                  className={`text-lg sm:text-2xl transition-all ${
                     isTabActive 
                       ? 'text-amber-500 dark:text-amber-400 scale-110' 
                       : 'text-slate-400 dark:text-slate-500'
                   }`} 
                 />
-                <span className="tracking-tight font-extrabold">{def.name}</span>
+                <span className="tracking-tight font-extrabold text-[10px] sm:text-xs truncate max-w-full">
+                  <span className="md:hidden">{ROLE_TAB_SHORT_NAMES[def.key] || def.name}</span>
+                  <span className="hidden md:inline">{def.name}</span>
+                </span>
                 {isTabActive && (
-                  <div className="w-7 h-1 rounded-full bg-amber-500 dark:bg-amber-400 mt-0.5 animate-in fade-in zoom-in-75 duration-200 shadow-xs" />
+                  <div className="w-4 sm:w-7 h-1 rounded-full bg-amber-500 dark:bg-amber-400 mt-0.5 animate-in fade-in zoom-in-75 duration-200 shadow-xs" />
                 )}
               </TabsTrigger>
             );
@@ -202,24 +215,24 @@ export const RoleRulesView: React.FC<RoleRulesViewProps> = ({
 
         {roles.map(def => {
           return (
-            <TabsContent key={def.key} value={def.key} className="mt-6">
+            <TabsContent key={def.key} value={def.key} className="mt-4 sm:mt-6">
               <Card className="rounded-3xl border border-slate-200/80 dark:border-zinc-800/80 bg-white dark:bg-zinc-900 shadow-xs">
-                <CardHeader>
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <CardHeader className="p-4 sm:p-6 pb-2 sm:pb-4">
+                  <div className="flex flex-col gap-3 sm:gap-4">
                     <div>
-                      <CardTitle className="text-xl font-extrabold tracking-tight">{def.name} Configuration</CardTitle>
-                      <CardDescription className="mt-1">{def.desc}</CardDescription>
+                      <CardTitle className="text-lg sm:text-xl font-extrabold tracking-tight">{def.name} Configuration</CardTitle>
+                      <CardDescription className="mt-0.5 sm:mt-1 text-xs sm:text-sm">{def.desc}</CardDescription>
                     </div>
 
-                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 shrink-0">
-                      <div className="relative">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 w-full justify-between">
+                      <div className="relative flex-1 min-w-0">
                         <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                         <Input
                           type="text"
                           placeholder="Search brother..."
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
-                          className="pl-9 pr-3 py-1.5 h-9 text-xs rounded-full border-slate-200 dark:border-zinc-700 w-full sm:w-48 bg-slate-50 dark:bg-zinc-800/50 focus:bg-white dark:focus:bg-zinc-900 transition-colors"
+                          className="pl-9 pr-3 py-1.5 h-9 text-xs rounded-full border-slate-200 dark:border-zinc-700 w-full bg-slate-50 dark:bg-zinc-800/50 focus:bg-white dark:focus:bg-zinc-900 transition-colors"
                         />
                         {searchQuery && (
                           <button
@@ -232,11 +245,11 @@ export const RoleRulesView: React.FC<RoleRulesViewProps> = ({
                         )}
                       </div>
 
-                      <div className="flex items-center bg-slate-100 dark:bg-zinc-800/80 p-1 rounded-full border border-slate-200/80 dark:border-zinc-700/60 text-xs">
+                      <div className="inline-flex items-center bg-slate-100 dark:bg-zinc-800/80 p-1 rounded-full border border-slate-200/80 dark:border-zinc-700/60 text-xs overflow-x-auto no-scrollbar shrink-0">
                         <button
                           type="button"
                           onClick={() => setStatusFilter('all')}
-                          className={`px-3 py-1 rounded-full font-bold text-xs transition-all cursor-pointer ${
+                          className={`px-3 py-1 rounded-full font-bold text-xs transition-all cursor-pointer whitespace-nowrap ${
                             statusFilter === 'all'
                               ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-white shadow-xs'
                               : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
@@ -247,7 +260,7 @@ export const RoleRulesView: React.FC<RoleRulesViewProps> = ({
                         <button
                           type="button"
                           onClick={() => setStatusFilter('elder')}
-                          className={`px-3 py-1 rounded-full font-bold text-xs transition-all cursor-pointer ${
+                          className={`px-3 py-1 rounded-full font-bold text-xs transition-all cursor-pointer whitespace-nowrap ${
                             statusFilter === 'elder'
                               ? 'bg-amber-500 text-white dark:bg-amber-500 shadow-xs'
                               : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
@@ -258,7 +271,7 @@ export const RoleRulesView: React.FC<RoleRulesViewProps> = ({
                         <button
                           type="button"
                           onClick={() => setStatusFilter('ms')}
-                          className={`px-3 py-1 rounded-full font-bold text-xs transition-all cursor-pointer ${
+                          className={`px-3 py-1 rounded-full font-bold text-xs transition-all cursor-pointer whitespace-nowrap ${
                             statusFilter === 'ms'
                               ? 'bg-blue-600 text-white dark:bg-blue-500 shadow-xs'
                               : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
@@ -269,7 +282,7 @@ export const RoleRulesView: React.FC<RoleRulesViewProps> = ({
                         <button
                           type="button"
                           onClick={() => setStatusFilter('publisher')}
-                          className={`px-3 py-1 rounded-full font-bold text-xs transition-all cursor-pointer ${
+                          className={`px-3 py-1 rounded-full font-bold text-xs transition-all cursor-pointer whitespace-nowrap ${
                             statusFilter === 'publisher'
                               ? 'bg-emerald-600 text-white dark:bg-emerald-500 shadow-xs'
                               : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
@@ -280,7 +293,7 @@ export const RoleRulesView: React.FC<RoleRulesViewProps> = ({
                         <button
                           type="button"
                           onClick={() => setStatusFilter('up')}
-                          className={`px-3 py-1 rounded-full font-bold text-xs transition-all cursor-pointer ${
+                          className={`px-3 py-1 rounded-full font-bold text-xs transition-all cursor-pointer whitespace-nowrap ${
                             statusFilter === 'up'
                               ? 'bg-amber-600 text-white dark:bg-amber-600 shadow-xs'
                               : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
@@ -310,7 +323,7 @@ export const RoleRulesView: React.FC<RoleRulesViewProps> = ({
                         No brothers found matching "{searchQuery}" {statusFilter !== 'all' ? `with filter '${statusFilter.toUpperCase()}'` : ''}
                       </div>
                     ) : (
-                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                         {filteredBrothers.map(brother => {
                           const isInRoster = currentRule.rosterIds.includes(brother.id);
 

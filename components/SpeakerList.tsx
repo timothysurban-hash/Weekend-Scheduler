@@ -1,11 +1,17 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Speaker, Outline, Assignment, DutyRole, SpiritualStatus } from '../types';
 import { DEMO_SPEAKERS } from '../constants';
-import { isBrotherQualifiedForRole, getCandidateStatus, getDefaultQualificationsForStatus } from '../utils/dateUtils';
+import { getCandidateStatus, getDefaultQualificationsForStatus } from '../utils/dateUtils';
+import {
+  filterBrothers,
+  sortBrothers,
+  getBrotherLastAssignment,
+  createBrotherRecord,
+  BrotherSortOption
+} from '../domain/brotherDirectory';
 import { MapPin, Trash2, Edit2, Check, ChevronDown } from 'lucide-react';
 import { Button } from './ui/button';
-import { Card, CardHeader, CardTitle, CardContent } from './ui/card';
-import { Badge } from './ui/badge';
+import { Card, CardContent } from './ui/card';
 import { Input } from './ui/input';
 import { Dialog, DialogHeader, DialogTitle, DialogFooter } from './ui/dialog';
 import { Icon } from './ui/Icon';
@@ -49,7 +55,7 @@ export const SpeakerList: React.FC<SpeakerListProps> = ({ speakers, outlines: _o
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'elder' | 'ms' | 'publisher' | 'up'>('all');
   const [roleFilter, setRoleFilter] = useState<string>('all');
-  const [sortBy, setSortBy] = useState<'rotation' | 'name_asc' | 'name_desc' | 'status' | 'last_assigned'>('rotation');
+  const [sortBy, setSortBy] = useState<BrotherSortOption>('rotation');
   
   // Dashboard Style Dropdown Menu State
   const [isRoleMenuOpen, setIsRoleMenuOpen] = useState(false);
@@ -113,54 +119,11 @@ export const SpeakerList: React.FC<SpeakerListProps> = ({ speakers, outlines: _o
   }, [defaultCongName]);
 
   // Calculate the effective last date and whether it was a hosting duty
-  const getLastAssignmentInfo = (speaker: Speaker) => {
-    let maxDate = speaker.lastAssigned || '';
-    let isHost = false;
-
-    const speakerAssignments = assignments.filter(a => 
-      a.speakerId === speaker.id || 
-      a.chairmanId === speaker.id || 
-      a.conductorId === speaker.id ||
-      a.readerId === speaker.id ||
-      a.entranceAttendantId === speaker.id ||
-      a.auditoriumAttendantId === speaker.id ||
-      a.micServerIds?.includes(speaker.id)
-    );
-
-    speakerAssignments.forEach(a => {
-        if (a.date > maxDate) {
-            maxDate = a.date;
-            isHost = false;
-        }
-    });
-
-    const hostedAssignments = assignments.filter(a => a.hostSpeakerId === speaker.id);
-    hostedAssignments.forEach(a => {
-        if (a.date > maxDate) {
-            maxDate = a.date;
-            isHost = true;
-        }
-    });
-
-    return maxDate ? { date: maxDate, isHost } : null;
-  };
+  const getLastAssignmentInfo = (speaker: Speaker) => getBrotherLastAssignment(speaker, assignments);
 
   const handleAdd = () => {
-    if (!newSpeaker.name) return;
-    
-    const maxSort = speakers.reduce((max, s) => (s.sortOrder ?? 0) > max ? (s.sortOrder ?? 0) : max, 0);
-
-    const speaker: Speaker = {
-        id: Math.random().toString(36).substr(2, 9),
-        name: newSpeaker.name,
-        congregation: newSpeaker.congregation || defaultCongName,
-        isGuest: newSpeaker.isGuest || false,
-        unavailableDates: [],
-        lastAssigned: null,
-        sortOrder: maxSort + 1,
-        spiritualStatus: newSpeaker.spiritualStatus,
-        qualifications: newSpeaker.qualifications
-    };
+    if (!newSpeaker.name.trim()) return;
+    const speaker = createBrotherRecord(newSpeaker, speakers, defaultCongName);
     updateSpeakers([...speakers, speaker]);
     setIsAdding(false);
     setNewSpeaker({ name: '', congregation: defaultCongName, isGuest: false, spiritualStatus: 'publisher', qualifications: getDefaultQualificationsForStatus('publisher') });
@@ -214,87 +177,53 @@ export const SpeakerList: React.FC<SpeakerListProps> = ({ speakers, outlines: _o
       setEditingId(null);
   };
 
-  const statusRank: Record<SpiritualStatus, number> = {
-    elder: 1,
-    ms: 2,
-    publisher: 3,
-    up: 4
-  };
-
-  const localSpeakers = speakers
-    .filter(s => !s.isGuest)
-    .filter(s => {
-      // 1. Search filter
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
-        const nameMatch = s.name.toLowerCase().includes(q);
-        const congMatch = (s.congregation || '').toLowerCase().includes(q);
-        if (!nameMatch && !congMatch) return false;
-      }
-
-      // 2. Spiritual Status Filter
-      const status = getCandidateStatus(s);
-      if (statusFilter !== 'all' && status !== statusFilter) return false;
-
-      // 3. Qualification Role Filter
-      if (roleFilter !== 'all') {
-        if (!isBrotherQualifiedForRole(s, roleFilter as DutyRole)) return false;
-      }
-
-      return true;
-    })
-    .sort((a, b) => {
-      if (sortBy === 'name_asc') {
-        return a.name.localeCompare(b.name);
-      }
-      if (sortBy === 'name_desc') {
-        return b.name.localeCompare(a.name);
-      }
-      if (sortBy === 'status') {
-        const rankA = statusRank[getCandidateStatus(a)] || 99;
-        const rankB = statusRank[getCandidateStatus(b)] || 99;
-        if (rankA !== rankB) return rankA - rankB;
-        return (a.sortOrder ?? 0) - (b.sortOrder ?? 0);
-      }
-      if (sortBy === 'last_assigned') {
-        const lastA = getLastAssignmentInfo(a)?.date || '';
-        const lastB = getLastAssignmentInfo(b)?.date || '';
-        if (!lastA && !lastB) return (a.sortOrder ?? 0) - (b.sortOrder ?? 0);
-        if (!lastA) return -1;
-        if (!lastB) return 1;
-        return lastA.localeCompare(lastB);
-      }
-      return (a.sortOrder ?? 0) - (b.sortOrder ?? 0);
-    });
+  const filteredSpeakers = filterBrothers(speakers, {
+    searchQuery,
+    statusFilter,
+    roleFilter,
+    includeGuests: false
+  });
+  const localSpeakers = sortBrothers(filteredSpeakers, sortBy, assignments);
 
   return (
     <div className="space-y-8">
       {/* Top Toolbar with Search, Status & Role Filters, and Action Buttons */}
-      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 py-2">
-        <div className="flex flex-wrap items-center gap-3 flex-1 min-w-0">
-          {/* Search Input */}
-          <div className="relative w-full sm:w-72 shrink-0">
-            <Icon name="search" className="text-xl text-slate-400 dark:text-slate-500 absolute left-4 top-3" />
+      <div className="flex flex-col gap-3 py-1">
+        {/* Row 1: Search Input & New Brother Button */}
+        <div className="flex items-center gap-2.5 w-full">
+          <div className="relative flex-1 min-w-0">
+            <Icon name="search" className="text-lg sm:text-xl text-slate-400 dark:text-slate-500 absolute left-3.5 sm:left-4 top-2.5 sm:top-3" />
             <input
               type="text"
               placeholder="Search brother name..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-11 pr-10 py-3 text-sm font-semibold bg-white dark:bg-zinc-800 border border-slate-200/90 dark:border-zinc-700/70 rounded-full text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-300 dark:focus:ring-zinc-600 transition-all shadow-xs hover:shadow-sm"
+              className="w-full pl-10 sm:pl-11 pr-9 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold bg-white dark:bg-zinc-800 border border-slate-200/90 dark:border-zinc-700/70 rounded-full text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-slate-300 dark:focus:ring-zinc-600 transition-all shadow-xs"
             />
             {searchQuery && (
-              <button onClick={() => setSearchQuery('')} className="absolute right-3.5 top-3 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer">
-                <Icon name="close" className="text-lg" />
+              <button onClick={() => setSearchQuery('')} className="absolute right-3 top-2 sm:top-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer">
+                <Icon name="close" className="text-base" />
               </button>
             )}
           </div>
 
+          <button 
+            onClick={() => setIsAdding(true)}
+            className="px-4 sm:px-6 py-2 sm:py-2.5 rounded-full bg-[#18181b] dark:bg-white text-white dark:text-zinc-950 font-extrabold text-xs sm:text-sm shadow-md hover:scale-[1.02] active:scale-95 transition-all flex items-center gap-1.5 sm:gap-2 cursor-pointer border border-zinc-800 dark:border-zinc-200 whitespace-nowrap shrink-0"
+          >
+            <Icon name="add" className="text-base sm:text-lg shrink-0" />
+            <span>New Brother</span>
+          </button>
+        </div>
+
+        {/* Row 2: Status Pills Strip & Dropdown Filters */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 w-full">
           {/* Spiritual Status Filters */}
-          <div className="inline-flex items-center p-1.5 bg-slate-100 dark:bg-zinc-800/90 rounded-full border border-slate-200/90 dark:border-zinc-700/70 shadow-xs shrink-0 overflow-x-auto">
+          <div className="inline-flex items-center p-1 bg-slate-100 dark:bg-zinc-800/90 rounded-full border border-slate-200/90 dark:border-zinc-700/70 shadow-xs max-w-full overflow-x-auto no-scrollbar shrink-0">
             <button
               type="button"
               onClick={() => setStatusFilter('all')}
-              className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+              className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                 statusFilter === 'all'
                   ? 'bg-white dark:bg-zinc-900 text-slate-900 dark:text-white shadow-sm scale-105'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
@@ -305,7 +234,7 @@ export const SpeakerList: React.FC<SpeakerListProps> = ({ speakers, outlines: _o
             <button
               type="button"
               onClick={() => setStatusFilter('elder')}
-              className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+              className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                 statusFilter === 'elder'
                   ? 'bg-indigo-600 text-white shadow-sm scale-105'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
@@ -316,7 +245,7 @@ export const SpeakerList: React.FC<SpeakerListProps> = ({ speakers, outlines: _o
             <button
               type="button"
               onClick={() => setStatusFilter('ms')}
-              className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+              className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                 statusFilter === 'ms'
                   ? 'bg-blue-600 text-white shadow-sm scale-105'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
@@ -327,7 +256,7 @@ export const SpeakerList: React.FC<SpeakerListProps> = ({ speakers, outlines: _o
             <button
               type="button"
               onClick={() => setStatusFilter('publisher')}
-              className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+              className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                 statusFilter === 'publisher'
                   ? 'bg-emerald-600 text-white shadow-sm scale-105'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
@@ -338,7 +267,7 @@ export const SpeakerList: React.FC<SpeakerListProps> = ({ speakers, outlines: _o
             <button
               type="button"
               onClick={() => setStatusFilter('up')}
-              className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
+              className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                 statusFilter === 'up'
                   ? 'bg-amber-600 text-white shadow-sm scale-105'
                   : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200'
@@ -348,135 +277,127 @@ export const SpeakerList: React.FC<SpeakerListProps> = ({ speakers, outlines: _o
             </button>
           </div>
 
-          {/* Qualification Role Filter (Dashboard Column Dropdown Style) */}
-          <div className="relative shrink-0" ref={roleMenuRef}>
-            <button
-              type="button"
-              onClick={() => setIsRoleMenuOpen(!isRoleMenuOpen)}
-              className="flex items-center justify-between gap-2.5 px-5 py-2.5 bg-white dark:bg-[#18181b] border border-slate-200/90 dark:border-zinc-800 text-slate-700 dark:text-slate-200 font-extrabold text-sm rounded-full hover:bg-slate-50 dark:hover:bg-zinc-800 transition-all shadow-xs cursor-pointer"
-            >
-              <span>
-                {roleFilter === 'all' 
-                  ? 'All Roles' 
-                  : ALL_ROLES.find(r => r.id === roleFilter)?.label || 'All Roles'}
-              </span>
-              <ChevronDown className={`w-4 h-4 text-slate-500 dark:text-slate-400 transition-transform duration-200 ${isRoleMenuOpen ? 'rotate-180' : ''}`} />
-            </button>
-
-            {isRoleMenuOpen && (
-              <div className="absolute left-0 mt-2 w-52 bg-white dark:bg-[#18181b] border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-xl z-50 p-1.5 space-y-0.5 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setRoleFilter('all');
-                    setIsRoleMenuOpen(false);
-                  }}
-                  className={`w-full text-left px-4 py-2.5 text-xs rounded-xl flex items-center justify-between transition-colors cursor-pointer ${
-                    roleFilter === 'all'
-                      ? 'bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-white font-extrabold'
-                      : 'text-slate-700 dark:text-slate-200 font-semibold hover:bg-slate-50 dark:hover:bg-zinc-800/60'
-                  }`}
-                >
-                  <span>All Roles</span>
-                  {roleFilter === 'all' && <Check className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />}
-                </button>
-
-                <div className="border-t border-slate-100 dark:border-zinc-800 my-1" />
-
-                {ALL_ROLES.map(role => {
-                  const isSelected = roleFilter === role.id;
-                  return (
-                    <button
-                      key={role.id}
-                      type="button"
-                      onClick={() => {
-                        setRoleFilter(role.id);
-                        setIsRoleMenuOpen(false);
-                      }}
-                      className={`w-full text-left px-4 py-2.5 text-xs rounded-xl flex items-center justify-between transition-colors cursor-pointer ${
-                        isSelected
-                          ? 'bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-white font-extrabold'
-                          : 'text-slate-700 dark:text-slate-200 font-semibold hover:bg-slate-50 dark:hover:bg-zinc-800/60'
-                      }`}
-                    >
-                      <span>{role.label}</span>
-                      {isSelected && <Check className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          {/* Sort Dropdown (Custom Popover Style matching All Roles) */}
-          <div className="relative shrink-0" ref={sortMenuRef}>
-            <button
-              type="button"
-              onClick={() => setIsSortMenuOpen(!isSortMenuOpen)}
-              className="flex items-center justify-between gap-2.5 px-5 py-2.5 bg-white dark:bg-[#18181b] border border-slate-200/90 dark:border-zinc-800 text-slate-700 dark:text-slate-200 font-extrabold text-sm rounded-full hover:bg-slate-50 dark:hover:bg-zinc-800 transition-all shadow-xs cursor-pointer"
-            >
-              <div className="flex items-center gap-2">
-                <Icon name="swap_vert" className="text-base text-slate-500 dark:text-slate-400" />
-                <span>
-                  {SORT_OPTIONS.find(s => s.id === sortBy)?.label || 'Rotation Sequence'}
+          {/* Role Filter & Sort Controls */}
+          <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 shrink-0">
+            {/* Qualification Role Filter */}
+            <div className="relative" ref={roleMenuRef}>
+              <button
+                type="button"
+                onClick={() => setIsRoleMenuOpen(!isRoleMenuOpen)}
+                className="w-full flex items-center justify-between gap-2 px-4 py-2 bg-white dark:bg-[#18181b] border border-slate-200/90 dark:border-zinc-800 text-slate-700 dark:text-slate-200 font-extrabold text-xs sm:text-sm rounded-full hover:bg-slate-50 dark:hover:bg-zinc-800 transition-all shadow-xs cursor-pointer truncate"
+              >
+                <span className="truncate">
+                  {roleFilter === 'all' 
+                    ? 'All Roles' 
+                    : ALL_ROLES.find(r => r.id === roleFilter)?.label || 'All Roles'}
                 </span>
-              </div>
-              <ChevronDown className={`w-4 h-4 text-slate-500 dark:text-slate-400 transition-transform duration-200 ${isSortMenuOpen ? 'rotate-180' : ''}`} />
-            </button>
+                <ChevronDown className={`w-3.5 h-3.5 shrink-0 text-slate-500 dark:text-slate-400 transition-transform duration-200 ${isRoleMenuOpen ? 'rotate-180' : ''}`} />
+              </button>
 
-            {isSortMenuOpen && (
-              <div className="absolute left-0 mt-2 w-56 bg-white dark:bg-[#18181b] border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-xl z-50 p-1.5 space-y-0.5 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                {SORT_OPTIONS.map(opt => {
-                  const isSelected = sortBy === opt.id;
-                  return (
-                    <button
-                      key={opt.id}
-                      type="button"
-                      onClick={() => {
-                        setSortBy(opt.id);
-                        setIsSortMenuOpen(false);
-                      }}
-                      className={`w-full text-left px-4 py-2.5 text-xs rounded-xl flex items-center justify-between transition-colors cursor-pointer ${
-                        isSelected
-                          ? 'bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-white font-extrabold'
-                          : 'text-slate-700 dark:text-slate-200 font-semibold hover:bg-slate-50 dark:hover:bg-zinc-800/60'
-                      }`}
-                    >
-                      <span>{opt.label}</span>
-                      {isSelected && <Check className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />}
-                    </button>
-                  );
-                })}
-              </div>
+              {isRoleMenuOpen && (
+                <div className="absolute left-0 sm:right-0 sm:left-auto mt-2 w-52 bg-white dark:bg-[#18181b] border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-xl z-50 p-1.5 space-y-0.5 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setRoleFilter('all');
+                      setIsRoleMenuOpen(false);
+                    }}
+                    className={`w-full text-left px-4 py-2.5 text-xs rounded-xl flex items-center justify-between transition-colors cursor-pointer ${
+                      roleFilter === 'all'
+                        ? 'bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-white font-extrabold'
+                        : 'text-slate-700 dark:text-slate-200 font-semibold hover:bg-slate-50 dark:hover:bg-zinc-800/60'
+                    }`}
+                  >
+                    <span>All Roles</span>
+                    {roleFilter === 'all' && <Check className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />}
+                  </button>
+
+                  <div className="border-t border-slate-100 dark:border-zinc-800 my-1" />
+
+                  {ALL_ROLES.map(role => {
+                    const isSelected = roleFilter === role.id;
+                    return (
+                      <button
+                        key={role.id}
+                        type="button"
+                        onClick={() => {
+                          setRoleFilter(role.id);
+                          setIsRoleMenuOpen(false);
+                        }}
+                        className={`w-full text-left px-4 py-2.5 text-xs rounded-xl flex items-center justify-between transition-colors cursor-pointer ${
+                          isSelected
+                            ? 'bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-white font-extrabold'
+                            : 'text-slate-700 dark:text-slate-200 font-semibold hover:bg-slate-50 dark:hover:bg-zinc-800/60'
+                        }`}
+                      >
+                        <span>{role.label}</span>
+                        {isSelected && <Check className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Sort Dropdown */}
+            <div className="relative" ref={sortMenuRef}>
+              <button
+                type="button"
+                onClick={() => setIsSortMenuOpen(!isSortMenuOpen)}
+                className="w-full flex items-center justify-between gap-2 px-4 py-2 bg-white dark:bg-[#18181b] border border-slate-200/90 dark:border-zinc-800 text-slate-700 dark:text-slate-200 font-extrabold text-xs sm:text-sm rounded-full hover:bg-slate-50 dark:hover:bg-zinc-800 transition-all shadow-xs cursor-pointer truncate"
+              >
+                <div className="flex items-center gap-1.5 truncate">
+                  <Icon name="swap_vert" className="text-base shrink-0 text-slate-500 dark:text-slate-400" />
+                  <span className="truncate">
+                    {SORT_OPTIONS.find(s => s.id === sortBy)?.label || 'Rotation Sequence'}
+                  </span>
+                </div>
+                <ChevronDown className={`w-3.5 h-3.5 shrink-0 text-slate-500 dark:text-slate-400 transition-transform duration-200 ${isSortMenuOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {isSortMenuOpen && (
+                <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-[#18181b] border border-slate-200 dark:border-zinc-800 rounded-2xl shadow-xl z-50 p-1.5 space-y-0.5 overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+                  {SORT_OPTIONS.map(opt => {
+                    const isSelected = sortBy === opt.id;
+                    return (
+                      <button
+                        key={opt.id}
+                        type="button"
+                        onClick={() => {
+                          setSortBy(opt.id);
+                          setIsSortMenuOpen(false);
+                        }}
+                        className={`w-full text-left px-4 py-2.5 text-xs rounded-xl flex items-center justify-between transition-colors cursor-pointer ${
+                          isSelected
+                            ? 'bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-white font-extrabold'
+                            : 'text-slate-700 dark:text-slate-200 font-semibold hover:bg-slate-50 dark:hover:bg-zinc-800/60'
+                        }`}
+                      >
+                        <span>{opt.label}</span>
+                        {isSelected && <Check className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Active Filter Clear Helper */}
+            {(statusFilter !== 'all' || roleFilter !== 'all' || searchQuery || sortBy !== 'rotation') && (
+              <button
+                type="button"
+                onClick={() => {
+                  setStatusFilter('all');
+                  setRoleFilter('all');
+                  setSearchQuery('');
+                  setSortBy('rotation');
+                }}
+                className="col-span-2 sm:col-span-1 text-center text-xs font-extrabold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer py-1"
+              >
+                Reset
+              </button>
             )}
           </div>
-
-          {/* Active Filter Clear Helper */}
-          {(statusFilter !== 'all' || roleFilter !== 'all' || searchQuery || sortBy !== 'rotation') && (
-            <button
-              type="button"
-              onClick={() => {
-                setStatusFilter('all');
-                setRoleFilter('all');
-                setSearchQuery('');
-                setSortBy('rotation');
-              }}
-              className="text-xs font-extrabold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer shrink-0 ml-1"
-            >
-              Reset Filters
-            </button>
-          )}
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex items-center gap-3 shrink-0">
-          <button 
-            onClick={() => setIsAdding(true)}
-            className="px-6 py-2.5 rounded-full bg-[#18181b] dark:bg-white text-white dark:text-zinc-950 font-extrabold text-sm shadow-md hover:scale-[1.02] active:scale-95 transition-all flex items-center gap-2 cursor-pointer border border-zinc-800 dark:border-zinc-200 whitespace-nowrap"
-          >
-            <Icon name="add" className="text-lg" />
-            New Brother
-          </button>
         </div>
       </div>
 
@@ -580,7 +501,7 @@ export const SpeakerList: React.FC<SpeakerListProps> = ({ speakers, outlines: _o
           </div>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
           {localSpeakers.map((speaker, idx) => {
             const lastInfo = getLastAssignmentInfo(speaker);
             const isDeleting = deleteConfirmId === speaker.id;
