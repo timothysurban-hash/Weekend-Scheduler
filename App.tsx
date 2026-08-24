@@ -66,6 +66,18 @@ function App() {
     scheduleRepository.saveOutlines(newOutlines);
   };
 
+  const handleRestoreReload = async () => {
+    try {
+      const data = await scheduleRepository.loadAll();
+      setAssignments(data.assignments);
+      setSpeakers(data.speakers);
+      setOutlines(data.outlines);
+      setSettings(data.settings);
+    } catch (e) {
+      console.error("Failed to reload restored data", e);
+    }
+  };
+
   const handleUpdateSettings = async (newSettings: AppSettings) => {
     const previousCongName = settings.congregationName;
     setSettings(newSettings);
@@ -162,6 +174,7 @@ function App() {
                   <Settings 
                     settings={settings}
                     saveSettings={handleUpdateSettings}
+                    onRestore={handleRestoreReload}
                   />
                 )}
               </div>

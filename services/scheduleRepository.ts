@@ -335,34 +335,153 @@ export class ScheduleRepository {
     };
   }
 
-  async restoreBackup(backup: any): Promise<RestoreResult> {
+  async restoreBackup(backupInput: any): Promise<RestoreResult> {
     try {
-      if (!backup || !backup.data) throw new Error("Invalid backup format");
-      const { settings, outlines, speakers, assignments, roles } = backup.data;
+      if (!backupInput) return { success: false };
 
-      if (!settings || typeof settings !== 'object') throw new Error("Missing Settings data");
-      if (!Array.isArray(outlines)) throw new Error("Missing Outlines data");
-      if (!Array.isArray(speakers)) throw new Error("Missing Speakers data");
-      if (!Array.isArray(assignments)) throw new Error("Missing Assignments data");
+      let backup = backupInput;
+      if (typeof backup === 'string') {
+        try {
+          backup = JSON.parse(backup);
+        } catch {
+          return { success: false };
+        }
+      }
 
+      if (typeof backup !== 'object' || backup === null) {
+        return { success: false };
+      }
+
+      // Support wrapped { data: ... }, { congregation_scheduler_backup: ... }, or flat root-level object
+      const rawData = (backup.data && typeof backup.data === 'object')
+        ? backup.data
+        : (backup.congregation_scheduler_backup && typeof backup.congregation_scheduler_backup === 'object')
+          ? backup.congregation_scheduler_backup
+          : backup;
+
+      const rawSettings = rawData.settings || rawData.appSettings || rawData.config;
+      const rawOutlines = rawData.outlines || rawData.outlineList || rawData.jw_sched_outlines;
+      const rawSpeakers = rawData.speakers || rawData.brothers || rawData.speakerList || rawData.jw_sched_speakers;
+      const rawAssignments = rawData.assignments || rawData.schedules || rawData.schedule || rawData.jw_sched_assignments;
+      const rawRoles = rawData.roles || rawData.roleDefinitions;
+
+      const hasAnyValidData = Boolean(
+        (rawSettings && typeof rawSettings === 'object' && Object.keys(rawSettings).length > 0) ||
+        (Array.isArray(rawSpeakers) && rawSpeakers.length > 0) ||
+        (Array.isArray(rawAssignments) && rawAssignments.length > 0) ||
+        (Array.isArray(rawOutlines) && rawOutlines.length > 0)
+      );
+
+      if (!hasAnyValidData) {
+        return { success: false };
+      }
+
+      // Settings sanitization
+      const settingsToSave: AppSettings = {
+        ...DEFAULT_SETTINGS,
+        ...(typeof rawSettings === 'object' && rawSettings !== null ? rawSettings : {})
+      };
+
+      // Speakers normalization & validation
+      let validSpeakers: Speaker[] = [];
+      if (Array.isArray(rawSpeakers)) {
+        validSpeakers = rawSpeakers.filter((item: any) => {
+          return item && typeof item === 'object' && (item.name || item.id);
+        }).map((item: any, idx: number) => {
+          const id = item.id ? String(item.id) : `speaker-${idx}-${Date.now()}`;
+          const name = String(item.name || 'Unnamed Brother');
+          const congregation = String(item.congregation || settingsToSave.congregationName || 'Green Heights');
+          const isGuest = Boolean(item.isGuest);
+          const spiritualStatus = item.spiritualStatus || 'publisher';
+          const qualifications = typeof item.qualifications === 'object' && item.qualifications !== null
+            ? item.qualifications
+            : {
+                chairman: true,
+                conductor: true,
+                reader: true,
+                speaker: true,
+                attendants: true,
+                mic: true
+              };
+
+          return {
+            id,
+            name,
+            congregation,
+            isGuest,
+            spiritualStatus,
+            qualifications,
+            unavailableDates: Array.isArray(item.unavailableDates) ? item.unavailableDates : [],
+            lastAssigned: item.lastAssigned || null,
+            sortOrder: typeof item.sortOrder === 'number' ? item.sortOrder : idx,
+            ...(item.assignedRoles ? { assignedRoles: item.assignedRoles } : {})
+          };
+        });
+      }
+
+      // If no speakers in backup, fallback to initial speakers
+      if (validSpeakers.length === 0 && (!rawSpeakers || rawSpeakers.length === 0)) {
+        validSpeakers = [...INITIAL_SPEAKERS];
+      }
+
+      // Outlines normalization & validation
+      let validOutlines: Outline[] = [];
+      if (Array.isArray(rawOutlines)) {
+        validOutlines = rawOutlines.filter((o: any) => {
+          return o && typeof o === 'object' && (o.title || o.id);
+        }).map((o: any, idx: number) => ({
+          id: typeof o.id === 'number' ? o.id : (parseInt(o.id, 10) || (idx + 1)),
+          title: String(o.title || `Talk Outline #${idx + 1}`),
+          ...(o.description ? { description: String(o.description) } : {})
+        }));
+      }
+
+      // If no outlines in backup, fallback to initial outlines
+      if (validOutlines.length === 0) {
+        validOutlines = [...INITIAL_OUTLINES];
+      }
+
+      // Assignments normalization & validation
+      let validAssignments: Assignment[] = [];
+      if (Array.isArray(rawAssignments)) {
+        validAssignments = rawAssignments.filter((a: any) => {
+          return a && typeof a === 'object' && a.date;
+        }).map((a: any, idx: number) => ({
+          id: a.id ? String(a.id) : `asg-${a.date}-${idx}`,
+          date: String(a.date),
+          ...(a.chairmanId ? { chairmanId: String(a.chairmanId) } : {}),
+          ...(a.conductorId ? { conductorId: String(a.conductorId) } : {}),
+          ...(a.readerId ? { readerId: String(a.readerId) } : {}),
+          ...(a.speakerId ? { speakerId: String(a.speakerId) } : {}),
+          ...(a.hostSpeakerId ? { hostSpeakerId: String(a.hostSpeakerId) } : {}),
+          ...(a.entranceAttendantId ? { entranceAttendantId: String(a.entranceAttendantId) } : {}),
+          ...(a.auditoriumAttendantId ? { auditoriumAttendantId: String(a.auditoriumAttendantId) } : {}),
+          ...(Array.isArray(a.micServerIds) ? { micServerIds: a.micServerIds.map(String) } : {}),
+          ...(a.customTalkTitle ? { customTalkTitle: String(a.customTalkTitle) } : {}),
+          ...(typeof a.outlineId === 'number' ? { outlineId: a.outlineId } : {}),
+          locked: Boolean(a.locked),
+          speakerLocked: Boolean(a.speakerLocked)
+        }));
+      }
+
+      // Roles normalization
+      let rolesToSave: RoleDefinition[] = [...DEFAULT_ROLES];
+      if (Array.isArray(rawRoles) && rawRoles.length > 0) {
+        rolesToSave = rawRoles.filter((r: any) => r && typeof r === 'object' && r.key && r.label);
+        if (rolesToSave.length === 0) rolesToSave = [...DEFAULT_ROLES];
+      }
+
+      // Atomic save
       await this.store.clearAll();
-
-      await this.store.saveSettings(settings);
-      const validOutlines = outlines.filter(isValidOutline);
+      await this.store.saveSettings(settingsToSave);
       await this.store.saveOutlines(validOutlines);
-
-      const validSpeakers = speakers.filter(isValidSpeaker);
       await this.store.saveSpeakers(validSpeakers);
-
-      const validAssignments = assignments.filter(isValidAssignment);
       await this.store.saveAssignments(validAssignments);
-
-      const rolesToSave = Array.isArray(roles) && roles.length > 0 ? roles : DEFAULT_ROLES;
       await this.store.saveRoles(rolesToSave);
 
       const hasAuthorityRoles = Boolean(
-        settings.authorityRoles &&
-        (settings.authorityRoles.conductorId || settings.authorityRoles.auditoriumAttendantId)
+        settingsToSave.authorityRoles &&
+        (settingsToSave.authorityRoles.conductorId || settingsToSave.authorityRoles.auditoriumAttendantId)
       );
 
       return {
@@ -374,7 +493,8 @@ export class ScheduleRepository {
           hasAuthorityRoles
         }
       };
-    } catch {
+    } catch (err) {
+      console.error("restoreBackup failed", err);
       return { success: false };
     }
   }

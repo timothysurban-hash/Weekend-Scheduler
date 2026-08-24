@@ -379,7 +379,7 @@ export const Settings: React.FC<SettingsProps> = ({ settings, saveSettings }) =>
                 type="file" 
                 ref={fileInputRef}
                 onChange={handleFileChange}
-                accept=".json"
+                accept=".json,application/json,text/plain,application/*"
                 className="hidden"
                 id="backup-upload"
               />
