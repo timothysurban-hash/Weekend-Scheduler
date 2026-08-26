@@ -29,7 +29,7 @@ describe('PrintScheduleModal Component (TDD)', () => {
     { id: 'a4', date: '2026-09-27', speakerId: 'b2', outlineId: 101, chairmanId: 'b1', locked: false }
   ];
 
-  it('renders multi-page sheets with 3 weeks on page 1 and remaining week on page 2 for a 4-week month', () => {
+  it('renders multi-page sheets with 3 weeks on page 1 and remaining week on page 2 when full 4-week range is selected', () => {
     const html = renderToString(
       <PrintScheduleModal
         assignments={septemberAssignments}
@@ -37,6 +37,8 @@ describe('PrintScheduleModal Component (TDD)', () => {
         outlines={outlines}
         settings={settings}
         viewDate={new Date('2026-09-01')}
+        initialStartDate="2026-09-06"
+        initialEndDate="2026-09-27"
         onClose={() => {}}
       />
     );
@@ -57,10 +59,32 @@ describe('PrintScheduleModal Component (TDD)', () => {
     expect(html).toContain('Weeks 1–3');
     expect(html).toContain('Week 4');
 
+    // Print and Save as Image actions in control bar
+    expect(html).toContain('Print Schedule');
+    expect(html).toContain('Save as Image');
+
     // Print class hooks for scrollbar removal and pagination
     expect(html).toContain('print-modal-backdrop');
     expect(html).toContain('print-page-sheet');
     expect(html).toContain('print-page-break');
+  });
+
+  it('defaults From to week 1 and To to week 3 of the month, fitting on 1 single page', () => {
+    const html = renderToString(
+      <PrintScheduleModal
+        assignments={septemberAssignments}
+        speakers={speakers}
+        outlines={outlines}
+        settings={settings}
+        viewDate={new Date('2026-09-01')}
+        onClose={() => {}}
+      />
+    );
+
+    expect(html).toContain('SETYEMBRE 6');
+    expect(html).toContain('SETYEMBRE 13');
+    expect(html).toContain('SETYEMBRE 20');
+    expect(html).toContain('3 meetings selected');
   });
 
   it('renders single sheet without batch selector buttons when month has <= 3 assignments', () => {
@@ -124,4 +148,65 @@ describe('PrintScheduleModal Component (TDD)', () => {
     // Vertical alignment on Microphone Servers
     expect(html).toContain('align-middle');
   });
+
+  it('renders cross-month date range (e.g. Sept 27 to Oct 11) fitting exactly 3 weeks on a single printed sheet', () => {
+    const crossMonthAssignments: Assignment[] = [
+      { id: 'a4', date: '2026-09-27', speakerId: 'b1', outlineId: 101, chairmanId: 'b2', locked: false },
+      { id: 'o1', date: '2026-10-04', speakerId: 'b2', outlineId: 101, chairmanId: 'b1', locked: false },
+      { id: 'o2', date: '2026-10-11', speakerId: 'b1', outlineId: 101, chairmanId: 'b2', locked: false },
+      { id: 'o3', date: '2026-10-18', speakerId: 'b2', outlineId: 101, chairmanId: 'b1', locked: false }
+    ];
+
+    const html = renderToString(
+      <PrintScheduleModal
+        assignments={crossMonthAssignments}
+        speakers={speakers}
+        outlines={outlines}
+        settings={settings}
+        viewDate={new Date('2026-09-01')}
+        initialStartDate="2026-09-27"
+        initialEndDate="2026-10-11"
+        onClose={() => {}}
+      />
+    );
+
+    // Cross-month dates rendered on the single 3-week sheet
+    expect(html).toContain('SETYEMBRE 27');
+    expect(html).toContain('OKTUBRE 4');
+    expect(html).toContain('OKTUBRE 11');
+    expect(html).toContain('3 meetings selected');
+
+    // Date range controls in print header
+    expect(html).toContain('From:');
+    expect(html).toContain('To:');
+  });
+
+  it('restricts From dropdown to strictly the viewed month, and To dropdown to start at week 3 onwards (excluding weeks 1 and 2)', () => {
+    const multiMonthAssignments: Assignment[] = [
+      { id: 's1', date: '2026-09-06', speakerId: 'b2', outlineId: 101, chairmanId: 'b1', locked: false },
+      { id: 's2', date: '2026-09-13', speakerId: 'b1', outlineId: 101, chairmanId: 'b2', locked: false },
+      { id: 's3', date: '2026-09-20', speakerId: 'b2', outlineId: 101, chairmanId: 'b1', locked: false },
+      { id: 's4', date: '2026-09-27', speakerId: 'b1', outlineId: 101, chairmanId: 'b2', locked: false },
+      { id: 'o1', date: '2026-10-04', speakerId: 'b2', outlineId: 101, chairmanId: 'b1', locked: false },
+      { id: 'o2', date: '2026-10-11', speakerId: 'b1', outlineId: 101, chairmanId: 'b2', locked: false }
+    ];
+
+    const html = renderToString(
+      <PrintScheduleModal
+        assignments={multiMonthAssignments}
+        speakers={speakers}
+        outlines={outlines}
+        settings={settings}
+        viewDate={new Date('2026-09-01')}
+        onClose={() => {}}
+      />
+    );
+
+    // Initial render defaults From to Sept 6 (Week 1) and To to Sept 20 (Week 3)
+    expect(html).toContain('From:');
+    expect(html).toContain('SETYEMBRE 6');
+    expect(html).toContain('To:');
+    expect(html).toContain('SETYEMBRE 20');
+  });
 });
+

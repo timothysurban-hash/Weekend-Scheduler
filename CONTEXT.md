@@ -31,4 +31,6 @@
 - [ADR-0001: Historical Schedule Generation & Past Week Editing](docs/adr/ADR-0001-historical-schedule-generation.md)
 - [ADR-0002: Standalone Capacitor Native Mobile App with Offline-First SQLite Architecture](docs/adr/ADR-0002-capacitor-offline-native-app.md)
 - [ADR-0003: 3-Week Print Pagination, Scrollbar Suppression & Layout Optimization](docs/adr/ADR-0003-print-pagination-and-layout.md)
+- [ADR-0004: Cross-Month Date Range Selection & 3-Per-Page Pagination for Print Schedule Modal](docs/adr/ADR-0004-cross-month-print-date-range.md)
+- [ADR-0005: High-Resolution PNG Image Export for Print Schedule Sheets](docs/adr/ADR-0005-high-resolution-image-export.md)
 
