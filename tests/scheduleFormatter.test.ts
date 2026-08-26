@@ -1,9 +1,10 @@
-﻿import { describe, it, expect } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import {
   formatBrotherNamesForClipboard,
   formatScheduleCsv,
   formatTagalogMeetingDate,
-  formatPrintOutlineInfo
+  formatPrintOutlineInfo,
+  chunkAssignmentsForPrint
 } from '../domain/scheduleFormatter';
 import { Assignment, Speaker, Outline } from '../types';
 
@@ -102,6 +103,66 @@ describe('ScheduleFormatter Module', () => {
       expect(csv).toContain('"Mark Evans"');
       expect(csv).toContain('"Making a Good Name With God"');
       expect(csv).toContain('"John Doe"');
+    });
+  });
+
+  describe('chunkAssignmentsForPrint', () => {
+    it('returns empty array when assignments are empty', () => {
+      expect(chunkAssignmentsForPrint([])).toEqual([]);
+    });
+
+    it('returns 1 batch for <= 3 assignments', () => {
+      const a1: Assignment = { id: '1', date: '2026-09-06', locked: false };
+      const a2: Assignment = { id: '2', date: '2026-09-13', locked: false };
+      const a3: Assignment = { id: '3', date: '2026-09-20', locked: false };
+
+      const batches = chunkAssignmentsForPrint([a1, a2, a3], 3);
+      expect(batches).toHaveLength(1);
+      expect(batches[0].id).toBe('batch-1');
+      expect(batches[0].label).toBe('Weeks 1–3');
+      expect(batches[0].assignments).toHaveLength(3);
+    });
+
+    it('chunks 4 assignments into 2 batches (Weeks 1–3 and Week 4)', () => {
+      const a1: Assignment = { id: '1', date: '2026-09-06', locked: false };
+      const a2: Assignment = { id: '2', date: '2026-09-13', locked: false };
+      const a3: Assignment = { id: '3', date: '2026-09-20', locked: false };
+      const a4: Assignment = { id: '4', date: '2026-09-27', locked: false };
+
+      const batches = chunkAssignmentsForPrint([a1, a2, a3, a4], 3);
+      expect(batches).toHaveLength(2);
+      expect(batches[0].label).toBe('Weeks 1–3');
+      expect(batches[0].assignments).toEqual([a1, a2, a3]);
+      expect(batches[1].label).toBe('Week 4');
+      expect(batches[1].assignments).toEqual([a4]);
+    });
+
+    it('chunks 5 assignments into 2 batches (Weeks 1–3 and Weeks 4–5)', () => {
+      const a1: Assignment = { id: '1', date: '2026-08-02', locked: false };
+      const a2: Assignment = { id: '2', date: '2026-08-09', locked: false };
+      const a3: Assignment = { id: '3', date: '2026-08-16', locked: false };
+      const a4: Assignment = { id: '4', date: '2026-08-23', locked: false };
+      const a5: Assignment = { id: '5', date: '2026-08-30', locked: false };
+
+      const batches = chunkAssignmentsForPrint([a1, a2, a3, a4, a5], 3);
+      expect(batches).toHaveLength(2);
+      expect(batches[0].label).toBe('Weeks 1–3');
+      expect(batches[0].assignments).toEqual([a1, a2, a3]);
+      expect(batches[1].label).toBe('Weeks 4–5');
+      expect(batches[1].assignments).toEqual([a4, a5]);
+    });
+
+    it('chunks 6 assignments into 2 batches (Weeks 1–3 and Weeks 4–6)', () => {
+      const assignments: Assignment[] = Array.from({ length: 6 }, (_, i) => ({
+        id: `a${i + 1}`,
+        date: `2026-08-${String(i + 1).padStart(2, '0')}`,
+        locked: false
+      }));
+
+      const batches = chunkAssignmentsForPrint(assignments, 3);
+      expect(batches).toHaveLength(2);
+      expect(batches[0].label).toBe('Weeks 1–3');
+      expect(batches[1].label).toBe('Weeks 4–6');
     });
   });
 });

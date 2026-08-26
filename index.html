@@ -163,6 +163,62 @@
       .safe-area-pb {
         padding-bottom: env(safe-area-inset-bottom, 20px);
       }
+
+      @page {
+        size: portrait;
+        margin: 6mm 8mm;
+      }
+
+      @media print {
+        html, body {
+          background: #ffffff !important;
+          color: #000000 !important;
+          overflow: visible !important;
+          height: auto !important;
+          margin: 0 !important;
+          padding: 0 !important;
+        }
+
+        #root {
+          display: none !important;
+        }
+
+        body > *:not(.print-modal-backdrop) {
+          display: none !important;
+        }
+
+        .print-modal-backdrop {
+          position: static !important;
+          inset: auto !important;
+          background: transparent !important;
+          backdrop-filter: none !important;
+          padding: 0 !important;
+          margin: 0 !important;
+          overflow: visible !important;
+          height: auto !important;
+          width: 100% !important;
+          display: block !important;
+        }
+
+        .print-page-sheet {
+          box-sizing: border-box !important;
+          padding: 0 !important;
+          margin: 0 auto !important;
+          width: 100% !important;
+          max-width: 100% !important;
+          box-shadow: none !important;
+          border: none !important;
+          border-radius: 0 !important;
+          overflow: visible !important;
+          page-break-inside: avoid !important;
+          break-inside: avoid !important;
+        }
+
+        .print-page-break {
+          page-break-after: always !important;
+          break-after: page !important;
+        }
+      }
     </style>
   <script type="importmap">
 {

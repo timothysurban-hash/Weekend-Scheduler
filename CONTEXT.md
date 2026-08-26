@@ -30,4 +30,5 @@
 ## Architecture Decision Records (ADRs)
 - [ADR-0001: Historical Schedule Generation & Past Week Editing](docs/adr/ADR-0001-historical-schedule-generation.md)
 - [ADR-0002: Standalone Capacitor Native Mobile App with Offline-First SQLite Architecture](docs/adr/ADR-0002-capacitor-offline-native-app.md)
+- [ADR-0003: 3-Week Print Pagination, Scrollbar Suppression & Layout Optimization](docs/adr/ADR-0003-print-pagination-and-layout.md)
 

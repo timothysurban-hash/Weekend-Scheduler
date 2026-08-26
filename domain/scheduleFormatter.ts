@@ -6,6 +6,12 @@ export interface ClipboardRosterResult {
   formattedDate: string;
 }
 
+export interface PrintAssignmentBatch {
+  id: string;
+  label: string;
+  assignments: Assignment[];
+}
+
 export const TAGALOG_MONTHS = [
   'ENERO', 'PEBRERO', 'MARSO', 'ABRIL', 'MAYO', 'HUNYO',
   'HULYO', 'AGOSTO', 'SETYEMBRE', 'OKTUBRE', 'NOBYEMBRE', 'DISYEMBRE'
@@ -171,4 +177,30 @@ export const formatScheduleCsv = (
   });
 
   return [headers.join(','), ...rows].join('\n');
+};
+
+/**
+ * Partitions assignments into batches of up to `batchSize` (default 3) for clean printing.
+ */
+export const chunkAssignmentsForPrint = (
+  assignments: Assignment[],
+  batchSize: number = 3
+): PrintAssignmentBatch[] => {
+  if (!assignments || assignments.length === 0) return [];
+  const batches: PrintAssignmentBatch[] = [];
+  const safeBatchSize = Math.max(1, batchSize);
+
+  for (let i = 0; i < assignments.length; i += safeBatchSize) {
+    const chunk = assignments.slice(i, i + safeBatchSize);
+    const startWeek = i + 1;
+    const endWeek = i + chunk.length;
+    const label = startWeek === endWeek ? `Week ${startWeek}` : `Weeks ${startWeek}–${endWeek}`;
+    batches.push({
+      id: `batch-${Math.floor(i / safeBatchSize) + 1}`,
+      label,
+      assignments: chunk
+    });
+  }
+
+  return batches;
 };
