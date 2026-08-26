@@ -174,111 +174,111 @@ export const PrintScheduleModal: React.FC<PrintScheduleModalProps> = ({
                 return (
                   <div
                     key={assignment.id}
-                    className="border border-slate-300 break-inside-avoid page-break-inside-avoid bg-white [print-color-adjust:exact] [-webkit-print-color-adjust:exact]"
+                    className="border-[1.5px] border-[#EEDCDA] break-inside-avoid page-break-inside-avoid bg-white [print-color-adjust:exact] [-webkit-print-color-adjust:exact]"
                   >
                     {/* Burgundy Date Header Bar */}
-                    <div className="bg-[#2A080D] text-white text-center font-bold uppercase text-[12px] sm:text-xs py-1 tracking-widest [print-color-adjust:exact] [-webkit-print-color-adjust:exact]">
+                    <div className="bg-[#2A080D] text-white text-center font-bold uppercase text-[16px] py-1 tracking-widest [print-color-adjust:exact] [-webkit-print-color-adjust:exact]">
                       {dateLabel}
                     </div>
 
                     {/* Duty Table */}
-                    <table className="w-full text-left border-collapse text-[11.5px] sm:text-[12px] leading-snug [print-color-adjust:exact] [-webkit-print-color-adjust:exact]">
+                    <table className="w-full text-left border-collapse text-[16px] leading-tight [print-color-adjust:exact] [-webkit-print-color-adjust:exact]">
                       <tbody>
                         {/* Entrance Attendant (White) */}
-                        <tr className="border-t border-slate-300 bg-white">
-                          <td className="w-44 sm:w-48 py-1.5 px-3 font-bold text-slate-900 border-r border-slate-300">
+                        <tr className="border-t-[1.5px] border-[#EEDCDA] bg-white">
+                          <td className="w-48 sm:w-52 py-1 px-3 font-bold text-slate-900 border-r-[1.5px] border-[#EEDCDA]">
                             Entrance Attendant
                           </td>
-                          <td className="py-1.5 px-3 font-normal text-slate-900">
+                          <td className="py-1 px-3 font-normal text-slate-900">
                             {getBrotherName(assignment.entranceAttendantId)}
                           </td>
                         </tr>
 
-                        {/* Auditorium Attendant (Tinted) */}
-                        <tr className="border-t border-slate-300 bg-[#f9ecef]">
-                          <td className="w-44 sm:w-48 py-1.5 px-3 font-bold text-slate-900 border-r border-slate-300">
+                        {/* Auditorium Attendant (Tinted #F9EEED) */}
+                        <tr className="border-t-[1.5px] border-[#EEDCDA] bg-[#F9EEED]">
+                          <td className="w-48 sm:w-52 py-1 px-3 font-bold text-slate-900 border-r-[1.5px] border-[#EEDCDA]">
                             Auditorium Attendant
                           </td>
-                          <td className="py-1.5 px-3 font-normal text-slate-900">
+                          <td className="py-1 px-3 font-normal text-slate-900">
                             {getBrotherName(assignment.auditoriumAttendantId)}
                           </td>
                         </tr>
 
                         {/* Chairman (White) */}
-                        <tr className="border-t border-slate-300 bg-white">
-                          <td className="w-44 sm:w-48 py-1.5 px-3 font-bold text-slate-900 border-r border-slate-300">
+                        <tr className="border-t-[1.5px] border-[#EEDCDA] bg-white">
+                          <td className="w-48 sm:w-52 py-1 px-3 font-bold text-slate-900 border-r-[1.5px] border-[#EEDCDA]">
                             Chairman
                           </td>
-                          <td className="py-1.5 px-3 font-normal text-slate-900">
+                          <td className="py-1 px-3 font-normal text-slate-900">
                             {getBrotherName(assignment.chairmanId)}
                           </td>
                         </tr>
 
-                        {/* Speaker (Highlighted #2A080D, White, Enclosed Top) */}
-                        <tr className="border-t-2 border-l-2 border-r-2 border-[#2A080D] bg-white">
-                          <td className="w-44 sm:w-48 py-1.5 px-3 font-bold text-[#2A080D] border-r-2 border-[#2A080D]">
+                        {/* Speaker (Highlighted #2A080D, Tinted #F9EEED, Enclosed Top) */}
+                        <tr className="border-t-2 border-l-2 border-r-2 border-[#2A080D] bg-[#F9EEED]">
+                          <td className="w-48 sm:w-52 py-1 px-3 font-bold text-[#2A080D] border-r-2 border-[#2A080D]">
                             Speaker
                           </td>
                           <td className="p-0 font-bold text-[#2A080D]">
                             {isGuestSpeaker && speakerCongregation ? (
                               <div className="flex divide-x-2 divide-[#2A080D]">
-                                <div className="py-1.5 px-3 flex-1">{speakerName}</div>
-                                <div className="py-1.5 px-3 flex-1 font-bold text-[#2A080D]">{speakerCongregation}</div>
+                                <div className="py-1 px-3 flex-1">{speakerName}</div>
+                                <div className="py-1 px-3 flex-1 font-bold text-[#2A080D]">{speakerCongregation}</div>
                               </div>
                             ) : (
-                              <div className="py-1.5 px-3">{speakerName}</div>
+                              <div className="py-1 px-3">{speakerName}</div>
                             )}
                           </td>
                         </tr>
 
                         {/* Tema (Highlighted #2A080D, White, Enclosed Bottom) */}
                         <tr className="border-t border-b-2 border-l-2 border-r-2 border-[#2A080D] bg-white">
-                          <td className="w-44 sm:w-48 p-0 border-r-2 border-[#2A080D]">
+                          <td className="w-48 sm:w-52 p-0 border-r-2 border-[#2A080D]">
                             <div className="flex divide-x-2 divide-[#2A080D] h-full items-stretch">
-                              <div className="py-1.5 px-3 font-bold text-[#2A080D] flex-1">
+                              <div className="py-1 px-3 font-bold text-[#2A080D] flex-1">
                                 Tema
                               </div>
-                              <div className="w-12 text-center py-1.5 px-1 font-bold text-[#2A080D] shrink-0 flex items-center justify-center">
+                              <div className="w-14 text-center py-1 px-1.5 font-bold text-[#2A080D] shrink-0 flex items-center justify-center">
                                 {outlineInfo.number || 'ST'}
                               </div>
                             </div>
                           </td>
-                          <td className="py-1.5 px-3 font-bold text-[#2A080D]">
+                          <td className="py-1 px-3 font-bold text-[#2A080D]">
                             {outlineInfo.title || '\u00A0'}
                           </td>
                         </tr>
 
-                        {/* WT Conductor (White) */}
-                        <tr className="border-t border-slate-300 bg-white">
-                          <td className="w-44 sm:w-48 py-1.5 px-3 font-bold text-slate-900 border-r border-slate-300">
+                        {/* WT Conductor (Tinted #F9EEED) */}
+                        <tr className="border-t-[1.5px] border-[#EEDCDA] bg-[#F9EEED]">
+                          <td className="w-48 sm:w-52 py-1 px-3 font-bold text-slate-900 border-r-[1.5px] border-[#EEDCDA]">
                             WT Conductor
                           </td>
-                          <td className="py-1.5 px-3 font-normal text-slate-900">
+                          <td className="py-1 px-3 font-normal text-slate-900">
                             {getBrotherName(assignment.conductorId)}
                           </td>
                         </tr>
 
-                        {/* Paragraph Reader (Tinted) */}
-                        <tr className="border-t border-slate-300 bg-[#f9ecef]">
-                          <td className="w-44 sm:w-48 py-1.5 px-3 font-bold text-slate-900 border-r border-slate-300">
+                        {/* Paragraph Reader (White) */}
+                        <tr className="border-t-[1.5px] border-[#EEDCDA] bg-white">
+                          <td className="w-48 sm:w-52 py-1 px-3 font-bold text-slate-900 border-r-[1.5px] border-[#EEDCDA]">
                             Paragraph Reader
                           </td>
-                          <td className="py-1.5 px-3 font-normal text-slate-900">
+                          <td className="py-1 px-3 font-normal text-slate-900">
                             {getBrotherName(assignment.readerId)}
                           </td>
                         </tr>
 
-                        {/* Microphone Servers (Tinted) */}
-                        <tr className="border-t border-slate-300 bg-[#f9ecef]">
-                          <td className="w-44 sm:w-48 py-1.5 px-3 font-bold text-slate-900 border-r border-slate-300 align-middle">
+                        {/* Microphone Servers (Alternating: Title #F9EEED, Line 1 #F9EEED, Line 2 White) */}
+                        <tr className="border-t-[1.5px] border-[#EEDCDA] bg-[#F9EEED]">
+                          <td className="w-48 sm:w-52 py-1 px-3 font-bold text-slate-900 border-r-[1.5px] border-[#EEDCDA] align-middle">
                             Microphone Servers
                           </td>
                           <td className="p-0 font-normal text-slate-900">
-                            <div className="divide-y divide-slate-300">
-                              <div className="py-1 px-3 min-h-[22px] flex items-center">
+                            <div className="divide-y-[1.5px] divide-[#EEDCDA]">
+                              <div className="py-1 px-3 min-h-[22px] flex items-center bg-[#F9EEED]">
                                 {mic1 || (!mic2 ? '' : '\u00A0')}
                               </div>
-                              <div className="py-1 px-3 min-h-[22px] flex items-center">
+                              <div className="py-1 px-3 min-h-[22px] flex items-center bg-white">
                                 {mic2 || '\u00A0'}
                               </div>
                             </div>

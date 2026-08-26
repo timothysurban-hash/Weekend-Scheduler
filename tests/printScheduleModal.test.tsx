@@ -109,6 +109,9 @@ describe('PrintScheduleModal Component (TDD)', () => {
     // #2A080D highlight colors on speaker and tema
     expect(html).toContain('text-[#2A080D]');
     expect(html).toContain('border-[#2A080D]');
+    expect(html).toContain('border-[1.5px]');
+    expect(html).toContain('border-[#EEDCDA]');
+    expect(html).toContain('text-[16px]');
     expect(html).toContain('Making a Good Name With God');
     
     // Bold labels
@@ -116,7 +119,7 @@ describe('PrintScheduleModal Component (TDD)', () => {
     expect(html).toContain('font-bold');
     
     // Distinct alternating row background tint
-    expect(html).toContain('bg-[#f9ecef]');
+    expect(html).toContain('bg-[#F9EEED]');
 
     // Vertical alignment on Microphone Servers
     expect(html).toContain('align-middle');
