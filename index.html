@@ -6,8 +6,7 @@
     <title>Congregation Scheduler</title>
     <!-- We keep Tailwind CDN for simplicity, though a build step is usually preferred for prod -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts & Satoshi Fontshare CDN -->
-    <link href="https://api.fontshare.com/v2/css?f[]=satoshi@900,700,500,300,400,800&display=swap" rel="stylesheet">
+    <!-- Google Fonts -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
     <script>
@@ -75,6 +74,42 @@
       }
     </script>
     <style>
+      @font-face {
+        font-family: 'Satoshi';
+        src: url('/fonts/Satoshi-Light.ttf') format('truetype');
+        font-weight: 300;
+        font-style: normal;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: 'Satoshi';
+        src: url('/fonts/Satoshi-Regular.ttf') format('truetype');
+        font-weight: 400;
+        font-style: normal;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: 'Satoshi';
+        src: url('/fonts/Satoshi-Medium.ttf') format('truetype');
+        font-weight: 500;
+        font-style: normal;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: 'Satoshi';
+        src: url('/fonts/Satoshi-Bold.ttf') format('truetype');
+        font-weight: 700;
+        font-style: normal;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: 'Satoshi';
+        src: url('/fonts/Satoshi-Black.ttf') format('truetype');
+        font-weight: 900;
+        font-style: normal;
+        font-display: swap;
+      }
+
       :root {
         --ease-smooth: cubic-bezier(0.25, 1, 0.5, 1);
         --background: 210 40% 98%;
@@ -212,6 +247,7 @@
           overflow: visible !important;
           page-break-inside: avoid !important;
           break-inside: avoid !important;
+          font-family: 'Satoshi', 'Inter', sans-serif !important;
         }
 
         .print-page-break {

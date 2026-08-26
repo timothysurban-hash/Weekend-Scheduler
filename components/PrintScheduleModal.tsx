@@ -133,7 +133,8 @@ export const PrintScheduleModal: React.FC<PrintScheduleModalProps> = ({
         displayedBatches.map((batch, batchIndex) => (
           <div
             key={batch.id}
-            className={`w-full max-w-3xl bg-white text-slate-900 p-4 sm:p-6 shadow-2xl rounded-2xl sm:rounded-sm font-sans mb-6 last:mb-0 print:mb-0 print:p-0 print-page-sheet ${
+            style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}
+            className={`w-full max-w-3xl bg-white text-slate-900 p-4 sm:p-6 shadow-2xl rounded-2xl sm:rounded-sm mb-6 last:mb-0 print:mb-0 print:p-0 print-page-sheet ${
               batchIndex < displayedBatches.length - 1 ? 'print-page-break' : ''
             }`}
           >
