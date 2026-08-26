@@ -33,4 +33,6 @@
 - [ADR-0003: 3-Week Print Pagination, Scrollbar Suppression & Layout Optimization](docs/adr/ADR-0003-print-pagination-and-layout.md)
 - [ADR-0004: Cross-Month Date Range Selection & 3-Per-Page Pagination for Print Schedule Modal](docs/adr/ADR-0004-cross-month-print-date-range.md)
 - [ADR-0005: High-Resolution PNG Image Export for Print Schedule Sheets](docs/adr/ADR-0005-high-resolution-image-export.md)
+- [ADR-0006: 4-Weeks-Per-Page Single-Sheet Print Layout & Compact Typography](docs/adr/ADR-0006-four-week-single-page-print-layout.md)
+- [ADR-0007: Automatic Document Title & PDF Export Filename Generation](docs/adr/ADR-0007-automatic-pdf-naming.md)
 

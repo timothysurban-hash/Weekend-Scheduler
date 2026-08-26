@@ -4,7 +4,8 @@ import {
   formatScheduleCsv,
   formatTagalogMeetingDate,
   formatPrintOutlineInfo,
-  chunkAssignmentsForPrint
+  chunkAssignmentsForPrint,
+  generateSchedulePdfTitle
 } from '../domain/scheduleFormatter';
 import { Assignment, Speaker, Outline } from '../types';
 
@@ -163,6 +164,13 @@ describe('ScheduleFormatter Module', () => {
       expect(batches).toHaveLength(2);
       expect(batches[0].label).toBe('Weeks 1–3');
       expect(batches[1].label).toBe('Weeks 4–6');
+    });
+  });
+
+  describe('generateSchedulePdfTitle', () => {
+    it('generates consistent formatted title for browser Save as PDF dialog', () => {
+      expect(generateSchedulePdfTitle('2026-09-06', '2026-09-27')).toBe('Weekend Schedule_Sept 06 2026 to Sept 27 2026');
+      expect(generateSchedulePdfTitle('2026-09-27', '2026-10-11')).toBe('Weekend Schedule_Sept 27 2026 to Oct 11 2026');
     });
   });
 });

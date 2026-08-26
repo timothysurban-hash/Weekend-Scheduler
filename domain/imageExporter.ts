@@ -1,4 +1,5 @@
 import { toPng } from 'html-to-image';
+import { generateSchedulePdfTitle } from './scheduleFormatter';
 
 export interface ExportImageOptions {
   pixelRatio?: number;
@@ -11,7 +12,7 @@ export function generateScheduleImageFilename(
   endDate: string,
   pageIndex?: number
 ): string {
-  const base = `Weekend_Schedule_${startDate}_to_${endDate}`;
+  const base = generateSchedulePdfTitle(startDate, endDate);
   if (pageIndex !== undefined) {
     return `${base}_page_${pageIndex}.png`;
   }

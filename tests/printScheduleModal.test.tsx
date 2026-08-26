@@ -29,7 +29,7 @@ describe('PrintScheduleModal Component (TDD)', () => {
     { id: 'a4', date: '2026-09-27', speakerId: 'b2', outlineId: 101, chairmanId: 'b1', locked: false }
   ];
 
-  it('renders multi-page sheets with 3 weeks on page 1 and remaining week on page 2 when full 4-week range is selected', () => {
+  it('renders all 4 weeks on 1 single page sheet for a 4-week month without page break buttons', () => {
     const html = renderToString(
       <PrintScheduleModal
         assignments={septemberAssignments}
@@ -43,7 +43,7 @@ describe('PrintScheduleModal Component (TDD)', () => {
       />
     );
 
-    // Header rendered on each printed sheet
+    // Header rendered on printed sheet
     expect(html).toContain('Green Heights Congregation — Tayabas City');
     expect(html).toContain('ARRANGEMENT FOR WEEKEND MEETING');
     expect(html).toContain('SUNDAY 3:00 P.M.');
@@ -53,23 +53,47 @@ describe('PrintScheduleModal Component (TDD)', () => {
     expect(html).toContain('SETYEMBRE 13');
     expect(html).toContain('SETYEMBRE 20');
     expect(html).toContain('SETYEMBRE 27');
+    expect(html).toContain('4 meetings selected');
 
-    // Batch selector buttons for 4-week month
-    expect(html).toContain('All (3/page)');
-    expect(html).toContain('Weeks 1–3');
-    expect(html).toContain('Week 4');
+    // 4 weeks fit on 1 sheet, so no multi-page batch selector needed
+    expect(html).not.toContain('All (4/page)');
 
     // Print and Save as Image actions in control bar
     expect(html).toContain('Print Schedule');
     expect(html).toContain('Save as Image');
 
-    // Print class hooks for scrollbar removal and pagination
+    // Print class hooks
     expect(html).toContain('print-modal-backdrop');
     expect(html).toContain('print-page-sheet');
+  });
+
+  it('renders multi-page sheets with 4 weeks on page 1 and remaining week on page 2 for a 5-week month', () => {
+    const fiveWeekAssignments: Assignment[] = [
+      ...septemberAssignments,
+      { id: 'a5', date: '2026-10-04', speakerId: 'b1', outlineId: 101, chairmanId: 'b2', locked: false }
+    ];
+
+    const html = renderToString(
+      <PrintScheduleModal
+        assignments={fiveWeekAssignments}
+        speakers={speakers}
+        outlines={outlines}
+        settings={settings}
+        viewDate={new Date('2026-09-01')}
+        initialStartDate="2026-09-06"
+        initialEndDate="2026-10-04"
+        onClose={() => {}}
+      />
+    );
+
+    // Batch selector buttons for 5-week range
+    expect(html).toContain('All (4/page)');
+    expect(html).toContain('Weeks 1–4');
+    expect(html).toContain('Week 5');
     expect(html).toContain('print-page-break');
   });
 
-  it('defaults From to week 1 and To to week 3 of the month, fitting on 1 single page', () => {
+  it('defaults From to week 1 and To to week 4 of the month, fitting 4 weeks on 1 single page', () => {
     const html = renderToString(
       <PrintScheduleModal
         assignments={septemberAssignments}
@@ -84,28 +108,8 @@ describe('PrintScheduleModal Component (TDD)', () => {
     expect(html).toContain('SETYEMBRE 6');
     expect(html).toContain('SETYEMBRE 13');
     expect(html).toContain('SETYEMBRE 20');
-    expect(html).toContain('3 meetings selected');
-  });
-
-  it('renders single sheet without batch selector buttons when month has <= 3 assignments', () => {
-    const threeAssignments = septemberAssignments.slice(0, 3);
-    const html = renderToString(
-      <PrintScheduleModal
-        assignments={threeAssignments}
-        speakers={speakers}
-        outlines={outlines}
-        settings={settings}
-        viewDate={new Date('2026-09-01')}
-        onClose={() => {}}
-      />
-    );
-
-    expect(html).toContain('SETYEMBRE 6');
-    expect(html).toContain('SETYEMBRE 13');
-    expect(html).toContain('SETYEMBRE 20');
-    expect(html).not.toContain('SETYEMBRE 27');
-    // No batch selector needed when all fit in 1 sheet
-    expect(html).not.toContain('All (3/page)');
+    expect(html).toContain('SETYEMBRE 27');
+    expect(html).toContain('4 meetings selected');
   });
 
   it('ensures background app (#root) is suppressed in print media stylesheet', async () => {
@@ -135,7 +139,7 @@ describe('PrintScheduleModal Component (TDD)', () => {
     expect(html).toContain('border-[#2A080D]');
     expect(html).toContain('border-[1.5px]');
     expect(html).toContain('border-[#EEDCDA]');
-    expect(html).toContain('text-[16px]');
+    expect(html).toContain('text-[13.5px]');
     expect(html).toContain('Making a Good Name With God');
     
     // Bold labels

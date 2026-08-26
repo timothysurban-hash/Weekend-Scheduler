@@ -204,3 +204,37 @@ export const chunkAssignmentsForPrint = (
 
   return batches;
 };
+
+export const MONTH_ABBREVIATIONS: { [key: number]: string } = {
+  1: 'Jan',
+  2: 'Feb',
+  3: 'Mar',
+  4: 'Apr',
+  5: 'May',
+  6: 'Jun',
+  7: 'Jul',
+  8: 'Aug',
+  9: 'Sept',
+  10: 'Oct',
+  11: 'Nov',
+  12: 'Dec'
+};
+
+export const formatDateForFilename = (dateStr: string): string => {
+  const parts = dateStr.split('-').map(Number);
+  if (parts.length < 3) return dateStr;
+  const [year, month, day] = parts;
+  const monthAbbr = MONTH_ABBREVIATIONS[month] || `M${month}`;
+  const dayStr = String(day).padStart(2, '0');
+  return `${monthAbbr} ${dayStr} ${year}`;
+};
+
+/**
+ * Generates the clean formatted title used for browser print / Save as PDF dialogs.
+ * Example: "Weekend Schedule_Sept 06 2026 to Sept 27 2026"
+ */
+export const generateSchedulePdfTitle = (startDate: string, endDate: string): string => {
+  const startFormatted = formatDateForFilename(startDate);
+  const endFormatted = formatDateForFilename(endDate);
+  return `Weekend Schedule_${startFormatted} to ${endFormatted}`;
+};

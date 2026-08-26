@@ -4,7 +4,8 @@ import { Printer, X, Layers, Calendar, ChevronDown, Check, Image as ImageIcon } 
 import {
   formatTagalogMeetingDate,
   formatPrintOutlineInfo,
-  chunkAssignmentsForPrint
+  chunkAssignmentsForPrint,
+  generateSchedulePdfTitle
 } from '../domain/scheduleFormatter';
 import {
   exportSheetToPng,
@@ -181,11 +182,11 @@ export const PrintScheduleModal: React.FC<PrintScheduleModalProps> = ({
 
   const firstMeetingOfMonth = monthDates[0] || allDates[0] || '';
   const defaultStart = initialStartDate || firstMeetingOfMonth;
-  // Default 'To' to the 3rd week of the month (index 2) so 3 weeks fit on 1 page by default
+  // Default 'To' to the 4th week of the month (index 3) so 4 weeks fit on 1 page by default
   const defaultEnd =
     initialEndDate ||
-    (monthDates.length >= 3 ? monthDates[2] : monthDates[monthDates.length - 1]) ||
-    allDates[Math.min(2, allDates.length - 1)] ||
+    (monthDates.length >= 4 ? monthDates[3] : monthDates[monthDates.length - 1]) ||
+    allDates[Math.min(3, allDates.length - 1)] ||
     defaultStart;
 
   const [startDate, setStartDate] = useState<string>(defaultStart);
@@ -203,7 +204,7 @@ export const PrintScheduleModal: React.FC<PrintScheduleModalProps> = ({
     .filter(a => (!startDate || a.date >= startDate) && (!endDate || a.date <= endDate))
     .sort((a, b) => a.date.localeCompare(b.date));
 
-  const batches = chunkAssignmentsForPrint(filteredAssignments, 3);
+  const batches = chunkAssignmentsForPrint(filteredAssignments, 4);
   const displayedBatches =
     selectedBatchId === 'all'
       ? batches
@@ -240,8 +241,35 @@ export const PrintScheduleModal: React.FC<PrintScheduleModalProps> = ({
     }
   };
 
+  // Maintain document title so browser "Save as PDF" automatically suggests the formatted name
+  useEffect(() => {
+    if (typeof document === 'undefined') return;
+    const originalTitle = document.title;
+    if (startDate && endDate) {
+      document.title = generateSchedulePdfTitle(startDate, endDate);
+    }
+    return () => {
+      document.title = originalTitle;
+    };
+  }, [startDate, endDate]);
+
   const handlePrint = () => {
-    window.print();
+    if (typeof document !== 'undefined' && startDate && endDate) {
+      const originalTitle = document.title;
+      const pdfTitle = generateSchedulePdfTitle(startDate, endDate);
+      document.title = pdfTitle;
+
+      const restoreTitle = () => {
+        document.title = originalTitle;
+        window.removeEventListener('afterprint', restoreTitle);
+      };
+
+      window.addEventListener('afterprint', restoreTitle);
+      window.print();
+      setTimeout(restoreTitle, 1000);
+    } else {
+      window.print();
+    }
   };
 
   const formattedCongName = settings.congregationName
@@ -345,7 +373,7 @@ export const PrintScheduleModal: React.FC<PrintScheduleModalProps> = ({
                     : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
                 }`}
               >
-                All (3/page)
+                All (4/page)
               </button>
               {batches.map(batch => (
                 <button
@@ -377,25 +405,25 @@ export const PrintScheduleModal: React.FC<PrintScheduleModalProps> = ({
           <div
             key={batch.id}
             style={{ fontFamily: "'Satoshi', 'Inter', sans-serif" }}
-            className={`w-full max-w-3xl bg-white text-slate-900 p-4 sm:p-6 shadow-2xl rounded-2xl sm:rounded-sm mb-6 last:mb-0 print:mb-0 print:p-0 print-page-sheet ${
+            className={`w-full max-w-3xl bg-white text-slate-900 p-3 sm:p-5 shadow-2xl rounded-2xl sm:rounded-sm mb-4 last:mb-0 print:mb-0 print:p-0 print-page-sheet ${
               batchIndex < displayedBatches.length - 1 ? 'print-page-break' : ''
             }`}
           >
             {/* Header */}
-            <div className="text-center mb-3.5 sm:mb-4">
-              <h1 className="text-base sm:text-lg font-bold text-slate-950 tracking-tight leading-tight">
+            <div className="text-center mb-2 sm:mb-2.5">
+              <h1 className="text-sm sm:text-base font-bold text-slate-950 tracking-tight leading-tight">
                 {congTitle}
               </h1>
-              <h2 className="text-xs sm:text-sm font-bold text-slate-900 tracking-wider uppercase mt-1 leading-tight">
+              <h2 className="text-[11px] sm:text-xs font-bold text-slate-900 tracking-wider uppercase mt-0.5 leading-tight">
                 ARRANGEMENT FOR WEEKEND MEETING
               </h2>
-              <h3 className="text-xs font-semibold text-slate-800 tracking-wide uppercase mt-0.5 leading-tight">
+              <h3 className="text-[10px] sm:text-[11px] font-semibold text-slate-800 tracking-wide uppercase leading-tight">
                 {settings.meetingTime || 'SUNDAY | 3:00 PM'}
               </h3>
             </div>
 
-            {/* Meeting Cards (3 weeks per sheet) */}
-            <div className="space-y-3.5 sm:space-y-4">
+            {/* Meeting Cards (4 weeks per sheet) */}
+            <div className="space-y-2 sm:space-y-2.5">
               {batch.assignments.map(assignment => {
                 const dateLabel = formatTagalogMeetingDate(assignment.date);
                 const outlineInfo = formatPrintOutlineInfo(assignment, outlines);
@@ -421,108 +449,108 @@ export const PrintScheduleModal: React.FC<PrintScheduleModalProps> = ({
                     className="border-[1.5px] border-[#EEDCDA] break-inside-avoid page-break-inside-avoid bg-white [print-color-adjust:exact] [-webkit-print-color-adjust:exact]"
                   >
                     {/* Burgundy Date Header Bar */}
-                    <div className="bg-[#2A080D] text-white text-center font-bold uppercase text-[16px] py-1 tracking-widest [print-color-adjust:exact] [-webkit-print-color-adjust:exact]">
+                    <div className="bg-[#2A080D] text-white text-center font-bold uppercase text-[14px] py-0.5 tracking-wider [print-color-adjust:exact] [-webkit-print-color-adjust:exact]">
                       {dateLabel}
                     </div>
 
                     {/* Duty Table */}
-                    <table className="w-full text-left border-collapse text-[16px] leading-tight [print-color-adjust:exact] [-webkit-print-color-adjust:exact]">
+                    <table className="w-full text-left border-collapse text-[13.5px] leading-tight [print-color-adjust:exact] [-webkit-print-color-adjust:exact]">
                       <tbody>
                         {/* Entrance Attendant (White) */}
                         <tr className="border-t-[1.5px] border-[#EEDCDA] bg-white">
-                          <td className="w-48 sm:w-52 py-1 px-3 font-bold text-slate-900 border-r-[1.5px] border-[#EEDCDA]">
+                          <td className="w-44 sm:w-48 py-0.5 px-2 font-bold text-slate-900 border-r-[1.5px] border-[#EEDCDA]">
                             Entrance Attendant
                           </td>
-                          <td className="py-1 px-3 font-normal text-slate-900">
+                          <td className="py-0.5 px-2 font-normal text-slate-900">
                             {getBrotherName(assignment.entranceAttendantId)}
                           </td>
                         </tr>
 
                         {/* Auditorium Attendant (Tinted #F9EEED) */}
                         <tr className="border-t-[1.5px] border-[#EEDCDA] bg-[#F9EEED]">
-                          <td className="w-48 sm:w-52 py-1 px-3 font-bold text-slate-900 border-r-[1.5px] border-[#EEDCDA]">
+                          <td className="w-44 sm:w-48 py-0.5 px-2 font-bold text-slate-900 border-r-[1.5px] border-[#EEDCDA]">
                             Auditorium Attendant
                           </td>
-                          <td className="py-1 px-3 font-normal text-slate-900">
+                          <td className="py-0.5 px-2 font-normal text-slate-900">
                             {getBrotherName(assignment.auditoriumAttendantId)}
                           </td>
                         </tr>
 
                         {/* Chairman (White) */}
                         <tr className="border-t-[1.5px] border-[#EEDCDA] bg-white">
-                          <td className="w-48 sm:w-52 py-1 px-3 font-bold text-slate-900 border-r-[1.5px] border-[#EEDCDA]">
+                          <td className="w-44 sm:w-48 py-0.5 px-2 font-bold text-slate-900 border-r-[1.5px] border-[#EEDCDA]">
                             Chairman
                           </td>
-                          <td className="py-1 px-3 font-normal text-slate-900">
+                          <td className="py-0.5 px-2 font-normal text-slate-900">
                             {getBrotherName(assignment.chairmanId)}
                           </td>
                         </tr>
 
                         {/* Speaker (Highlighted #2A080D, Tinted #F9EEED, Enclosed Top) */}
                         <tr className="border-t-2 border-l-2 border-r-2 border-[#2A080D] bg-[#F9EEED]">
-                          <td className="w-48 sm:w-52 py-1 px-3 font-bold text-[#2A080D] border-r-2 border-[#2A080D]">
+                          <td className="w-44 sm:w-48 py-0.5 px-2 font-bold text-[#2A080D] border-r-2 border-[#2A080D]">
                             Speaker
                           </td>
                           <td className="p-0 font-bold text-[#2A080D]">
                             {isGuestSpeaker && speakerCongregation ? (
                               <div className="flex divide-x-2 divide-[#2A080D]">
-                                <div className="py-1 px-3 flex-1">{speakerName}</div>
-                                <div className="py-1 px-3 flex-1 font-bold text-[#2A080D]">{speakerCongregation}</div>
+                                <div className="py-0.5 px-2 flex-1">{speakerName}</div>
+                                <div className="py-0.5 px-2 flex-1 font-bold text-[#2A080D]">{speakerCongregation}</div>
                               </div>
                             ) : (
-                              <div className="py-1 px-3">{speakerName}</div>
+                              <div className="py-0.5 px-2">{speakerName}</div>
                             )}
                           </td>
                         </tr>
 
                         {/* Tema (Highlighted #2A080D, White, Enclosed Bottom) */}
                         <tr className="border-t border-b-2 border-l-2 border-r-2 border-[#2A080D] bg-white">
-                          <td className="w-48 sm:w-52 p-0 border-r-2 border-[#2A080D]">
+                          <td className="w-44 sm:w-48 p-0 border-r-2 border-[#2A080D]">
                             <div className="flex divide-x-2 divide-[#2A080D] h-full items-stretch">
-                              <div className="py-1 px-3 font-bold text-[#2A080D] flex-1">
+                              <div className="py-0.5 px-2 font-bold text-[#2A080D] flex-1">
                                 Tema
                               </div>
-                              <div className="w-14 text-center py-1 px-1.5 font-bold text-[#2A080D] shrink-0 flex items-center justify-center">
+                              <div className="w-12 text-center py-0.5 px-1 font-bold text-[#2A080D] shrink-0 flex items-center justify-center">
                                 {outlineInfo.number || 'ST'}
                               </div>
                             </div>
                           </td>
-                          <td className="py-1 px-3 font-bold text-[#2A080D]">
+                          <td className="py-0.5 px-2 font-bold text-[#2A080D]">
                             {outlineInfo.title || '\u00A0'}
                           </td>
                         </tr>
 
                         {/* WT Conductor (Tinted #F9EEED) */}
                         <tr className="border-t-[1.5px] border-[#EEDCDA] bg-[#F9EEED]">
-                          <td className="w-48 sm:w-52 py-1 px-3 font-bold text-slate-900 border-r-[1.5px] border-[#EEDCDA]">
+                          <td className="w-44 sm:w-48 py-0.5 px-2 font-bold text-slate-900 border-r-[1.5px] border-[#EEDCDA]">
                             WT Conductor
                           </td>
-                          <td className="py-1 px-3 font-normal text-slate-900">
+                          <td className="py-0.5 px-2 font-normal text-slate-900">
                             {getBrotherName(assignment.conductorId)}
                           </td>
                         </tr>
 
                         {/* Paragraph Reader (White) */}
                         <tr className="border-t-[1.5px] border-[#EEDCDA] bg-white">
-                          <td className="w-48 sm:w-52 py-1 px-3 font-bold text-slate-900 border-r-[1.5px] border-[#EEDCDA]">
+                          <td className="w-44 sm:w-48 py-0.5 px-2 font-bold text-slate-900 border-r-[1.5px] border-[#EEDCDA]">
                             Paragraph Reader
                           </td>
-                          <td className="py-1 px-3 font-normal text-slate-900">
+                          <td className="py-0.5 px-2 font-normal text-slate-900">
                             {getBrotherName(assignment.readerId)}
                           </td>
                         </tr>
 
                         {/* Microphone Servers (Alternating: Title #F9EEED, Line 1 #F9EEED, Line 2 White) */}
                         <tr className="border-t-[1.5px] border-[#EEDCDA] bg-[#F9EEED]">
-                          <td className="w-48 sm:w-52 py-1 px-3 font-bold text-slate-900 border-r-[1.5px] border-[#EEDCDA] align-middle">
+                          <td className="w-44 sm:w-48 py-0.5 px-2 font-bold text-slate-900 border-r-[1.5px] border-[#EEDCDA] align-middle">
                             Microphone Servers
                           </td>
                           <td className="p-0 font-normal text-slate-900">
                             <div className="divide-y-[1.5px] divide-[#EEDCDA]">
-                              <div className="py-1 px-3 min-h-[22px] flex items-center bg-[#F9EEED]">
+                              <div className="py-0.5 px-2 min-h-[18px] flex items-center bg-[#F9EEED]">
                                 {mic1 || (!mic2 ? '' : '\u00A0')}
                               </div>
-                              <div className="py-1 px-3 min-h-[22px] flex items-center bg-white">
+                              <div className="py-0.5 px-2 min-h-[18px] flex items-center bg-white">
                                 {mic2 || '\u00A0'}
                               </div>
                             </div>
