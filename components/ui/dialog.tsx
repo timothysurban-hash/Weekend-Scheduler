@@ -11,7 +11,7 @@ export interface DialogProps {
 export const Dialog: React.FC<DialogProps> = ({ open, onOpenChange, children }) => {
   if (!open) return null;
 
-  return createPortal(
+  const content = (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
       <div 
         className="fixed inset-0" 
@@ -27,9 +27,14 @@ export const Dialog: React.FC<DialogProps> = ({ open, onOpenChange, children }) 
         </button>
         {children}
       </div>
-    </div>,
-    document.body
+    </div>
   );
+
+  if (typeof document === 'undefined') {
+    return content;
+  }
+
+  return createPortal(content, document.body);
 };
 
 export const DialogHeader: React.FC<React.HTMLAttributes<HTMLDivElement>> = ({ className = '', ...props }) => (
