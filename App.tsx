@@ -5,6 +5,7 @@ import { DEFAULT_SETTINGS } from './constants';
 import { Navbar } from './components/Navbar';
 import { ScheduleView } from './components/ScheduleView';
 import { ToastContainer } from './components/ui/Toast';
+import { SolarChronoLogo } from './components/ui/SolarChronoLogo';
 
 // Lazy-loaded route views for optimal bundle splitting and fast initial paint
 const SpeakerList = lazy(() => import('./components/SpeakerList').then(m => ({ default: m.SpeakerList })));
@@ -118,8 +119,8 @@ function App() {
         {/* Mobile Header */}
         <header className="md:hidden px-4 py-3.5 bg-white dark:bg-[#14151b] border-b border-slate-100 dark:border-zinc-800/60 flex justify-between items-center text-slate-900 dark:text-white shrink-0">
            <div className="flex items-center gap-2.5">
-             <div className="w-8 h-8 rounded-xl bg-[#fef9c3] text-zinc-950 flex items-center justify-center font-black shadow-xs shrink-0">
-               <span className="text-base font-black">📅</span>
+             <div className="w-8 h-8 rounded-xl bg-zinc-900 border border-amber-500/20 p-1.5 flex items-center justify-center shadow-xs shrink-0">
+               <SolarChronoLogo className="w-full h-full" />
              </div>
              <h1 className="text-base font-extrabold tracking-tight truncate">{getViewTitle()}</h1>
            </div>

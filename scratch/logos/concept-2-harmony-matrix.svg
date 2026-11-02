@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <title>Congregation Scheduler — The Swiss 4-Matrix</title>
+  <!-- Concept 2: The Swiss 4-Matrix (The 4-Week Rotational Cadence) -->
+  <g>
+    <!-- Week 1: Top-Left (Macro-radius top-left corner) -->
+    <path d="M 52 86 
+             A 34 34 0 0 1 86 52 
+             L 120 52 
+             L 120 120 
+             L 52 120 
+             Z" 
+          fill="#F59E0B" />
+
+    <!-- Week 2: Top-Right (Macro-radius top-right corner) -->
+    <path d="M 136 52 
+             L 170 52 
+             A 34 34 0 0 1 204 86 
+             L 204 120 
+             L 136 120 
+             Z" 
+          fill="#D97706" />
+
+    <!-- Week 3: Bottom-Right (Macro-radius bottom-right corner) -->
+    <path d="M 136 136 
+             L 204 136 
+             L 204 170 
+             A 34 34 0 0 1 170 204 
+             L 136 204 
+             Z" 
+          fill="#F59E0B" />
+
+    <!-- Week 4: Bottom-Left (Macro-radius bottom-left corner) -->
+    <path d="M 52 136 
+             L 120 136 
+             L 120 204 
+             L 86 204 
+             A 34 34 0 0 1 52 170 
+             Z" 
+          fill="#D97706" />
+
+    <!-- Central Micro Core Pivot -->
+    <circle cx="128" cy="128" r="5" fill="#FFFBEB" />
+  </g>
+</svg>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ViewState } from '../types';
 import { Icon } from './ui/Icon';
+import { SolarChronoLogo } from './ui/SolarChronoLogo';
 
 interface NavbarProps {
   currentView: ViewState;
@@ -46,8 +47,8 @@ export const Navbar: React.FC<NavbarProps> = ({ currentView, setView }) => {
         <div>
           {/* Top Logo & App Squircle Badge */}
           <div className="flex items-center gap-3.5 mb-10 px-1">
-            <div className="w-12 h-12 rounded-2xl bg-[#fef9c3] text-zinc-950 flex items-center justify-center font-black shadow-md shrink-0 transition-transform hover:scale-105 active:scale-95 cursor-pointer">
-              <Icon name="calendar_today" className="text-2xl text-zinc-950" />
+            <div className="w-12 h-12 rounded-2xl bg-zinc-900/90 border border-amber-500/20 p-2.5 flex items-center justify-center shadow-md shadow-amber-950/20 shrink-0 transition-transform hover:scale-105 active:scale-95 cursor-pointer">
+              <SolarChronoLogo className="w-full h-full" />
             </div>
             <div className="hidden lg:block">
               <h2 className="font-extrabold text-base text-white leading-tight tracking-tight">Congregation</h2>

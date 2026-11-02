@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <title>Congregation Scheduler — The Linear Cadence</title>
+  <!-- Concept 1: The Linear Cadence (Monumental Sliced Circle) -->
+  <!-- Pure solid vector on transparent canvas. Works in 1-color or brand amber. -->
+  <g fill="#F59E0B">
+    <!-- Top Hemispheric C-Crown -->
+    <path d="M 128 36 
+             A 92 92 0 0 0 36 128 
+             A 92 92 0 0 0 42 160 
+             L 148 54 
+             A 92 92 0 0 0 128 36 
+             Z" />
+
+    <!-- Bottom Hemispheric S-Base -->
+    <path d="M 128 220 
+             A 92 92 0 0 0 220 128 
+             A 92 92 0 0 0 214 96 
+             L 108 202 
+             A 92 92 0 0 0 128 220 
+             Z" />
+
+    <!-- Central Diagonal Cadence Pillar -->
+    <rect x="114" y="90" width="28" height="76" rx="14" transform="rotate(45 128 128)" fill="#D97706" />
+  </g>
+</svg>

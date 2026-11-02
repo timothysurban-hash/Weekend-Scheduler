@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <title>Congregation Scheduler — The Vanguard Chevron</title>
+  <!-- Concept 4: The Vanguard Chevron (Dynamic Schedule Forward Cadence) -->
+  <g transform="translate(128, 128) scale(1.18) translate(-128, -128)">
+    <!-- Upper Forward Chevron (Talk Outline & Leadership Flow) -->
+    <path d="M 64 64 
+             L 156 64 
+             L 192 100 
+             L 148 144 
+             L 112 108 
+             L 64 108 
+             Z" 
+          fill="#F59E0B" />
+
+    <!-- Lower Return Chevron (Duty Rosters & Attendant Support) -->
+    <path d="M 64 192 
+             L 156 192 
+             L 192 156 
+             L 148 112 
+             L 112 148 
+             L 64 148 
+             Z" 
+          fill="#D97706" />
+
+    <!-- Leading Edge Focal Diamond -->
+    <rect x="180" y="116" width="24" height="24" rx="5" transform="rotate(45 192 128)" fill="#FBBF24" />
+  </g>
+</svg>

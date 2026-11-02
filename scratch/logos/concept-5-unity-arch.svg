@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <title>Congregation Scheduler — The Assembly Portal</title>
+  <!-- Concept 5: The Assembly Portal (Sacred Archway & Service Horizon) -->
+  <g fill-rule="evenodd" transform="translate(0, 4)">
+    <!-- Monumental Outer Archway & Hall Plinth -->
+    <path d="M 48 136 
+             A 80 80 0 0 1 208 136 
+             L 208 208 
+             L 164 208 
+             L 164 146 
+             A 36 36 0 0 0 92 146 
+             L 92 208 
+             L 48 208 
+             Z" 
+          fill="#F59E0B" />
+
+    <!-- Radiant Platform Beacon (The Weekend Assembly Light) -->
+    <circle cx="128" cy="92" r="16" fill="#D97706" />
+    <circle cx="128" cy="92" r="6" fill="#FFFBEB" />
+  </g>
+</svg>
