@@ -453,8 +453,22 @@ export const PrintScheduleModal: React.FC<PrintScheduleModalProps> = ({
                       {dateLabel}
                     </div>
 
-                    {/* Duty Table */}
-                    <table className="w-full text-left border-collapse text-[13.5px] leading-tight [print-color-adjust:exact] [-webkit-print-color-adjust:exact]">
+                    {/* Duty Table or Special Event Notice */}
+                    {assignment.isSpecialEvent && (assignment.noMeeting ?? true) ? (
+                      <div className="py-7 sm:py-8 px-4 text-center bg-[#FAF6F5] border-t-[1.5px] border-[#EEDCDA] flex flex-col items-center justify-center space-y-1.5 [print-color-adjust:exact]">
+                        <div className="text-[17px] sm:text-[19px] font-black uppercase tracking-wider text-[#2A080D] leading-tight">
+                          {assignment.specialEventTitle || 'Special Event / Assembly'}
+                        </div>
+                        <div className="text-[12px] sm:text-[13px] font-bold text-slate-600 uppercase tracking-widest">
+                          {settings.languageMode === 'tagalog'
+                            ? 'Walang Pulong sa Kingdom Hall'
+                            : settings.languageMode === 'both'
+                            ? 'Walang Pulong sa Kingdom Hall • No Meeting at Kingdom Hall'
+                            : 'No Meeting at Kingdom Hall'}
+                        </div>
+                      </div>
+                    ) : (
+                      <table className="w-full text-left border-collapse text-[13.5px] leading-tight [print-color-adjust:exact] [-webkit-print-color-adjust:exact]">
                       <tbody>
                         {/* Entrance Attendant (White) */}
                         <tr className="border-t-[1.5px] border-[#EEDCDA] bg-white">
@@ -558,6 +572,7 @@ export const PrintScheduleModal: React.FC<PrintScheduleModalProps> = ({
                         </tr>
                       </tbody>
                     </table>
+                    )}
                   </div>
                 );
               })}

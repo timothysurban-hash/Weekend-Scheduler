@@ -212,5 +212,37 @@ describe('PrintScheduleModal Component (TDD)', () => {
     expect(html).toContain('To:');
     expect(html).toContain('SETYEMBRE 20');
   });
+
+  it('renders prominent centered event notice card for No Meeting special weeks', () => {
+    const assignmentsWithSpecial: Assignment[] = [
+      {
+        id: 'sp-print-1',
+        date: '2026-11-29',
+        speakerId: null,
+        outlineId: null,
+        locked: false,
+        isSpecialEvent: true,
+        specialEventType: 'regional_convention',
+        specialEventTitle: 'Regional Convention',
+        noMeeting: true,
+      }
+    ];
+
+    const html = renderToString(
+      <PrintScheduleModal
+        assignments={assignmentsWithSpecial}
+        speakers={speakers}
+        outlines={outlines}
+        settings={{ ...settings, languageMode: 'both' }}
+        viewDate={new Date('2026-11-01')}
+        initialStartDate="2026-11-29"
+        initialEndDate="2026-11-29"
+        onClose={() => {}}
+      />
+    );
+
+    expect(html).toContain('Regional Convention');
+    expect(html).toContain('Walang Pulong sa Kingdom Hall');
+  });
 });
 

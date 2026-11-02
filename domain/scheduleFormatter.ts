@@ -68,6 +68,18 @@ export const formatBrotherNamesForClipboard = (
   assignment: Assignment,
   speakers: Speaker[]
 ): ClipboardRosterResult => {
+  if (assignment.isSpecialEvent && (assignment.noMeeting ?? true)) {
+    const dateObj = new Date(assignment.date);
+    const formattedDate = !isNaN(dateObj.getTime())
+      ? dateObj.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+      : assignment.date;
+    return {
+      text: `${assignment.specialEventTitle || 'Special Event'} - (No Meeting)`,
+      count: 0,
+      formattedDate
+    };
+  }
+
   const idsToCopy: string[] = [];
 
   if (assignment.chairmanId) idsToCopy.push(assignment.chairmanId);
