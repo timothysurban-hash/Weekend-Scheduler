@@ -28,6 +28,7 @@ export interface ScheduleDesktopRowProps {
   onAddGuest: (assignmentId: string) => void;
   onCopyBrotherNames?: (assignment: Assignment) => void;
   onDeleteAssignment?: (assignmentId: string) => void;
+  onOpenSpecialWeek?: (assignment: Assignment) => void;
 }
 
 export const ScheduleDesktopRow: React.FC<ScheduleDesktopRowProps> = React.memo(({
@@ -48,7 +49,8 @@ export const ScheduleDesktopRow: React.FC<ScheduleDesktopRowProps> = React.memo(
   onLockToggle,
   onSpeakerLockToggle,
   onAddGuest,
-  onCopyBrotherNames
+  onCopyBrotherNames,
+  onOpenSpecialWeek
 }) => {
   const isRoleInFilter = (roleKey: string) => {
     if (roleFilter === 'all') return true;
@@ -57,6 +59,11 @@ export const ScheduleDesktopRow: React.FC<ScheduleDesktopRowProps> = React.memo(
     if (roleFilter === 'support') return ['attendants', 'mic'].includes(roleKey);
     return true;
   };
+
+  const isMeetingSuspended = Boolean(assignment.isSpecialEvent && (assignment.noMeeting ?? true));
+  const visibleDutyCount = ['chairman', 'conductor', 'reader', 'speaker', 'attendants', 'mic'].filter(
+    r => visibleRoles.includes(r) && isRoleInFilter(r)
+  ).length;
 
   // Fallback options generator if not passed
   const fallbackBrotherOptions = (role: string, currentId?: string | null) => {
@@ -108,6 +115,33 @@ export const ScheduleDesktopRow: React.FC<ScheduleDesktopRowProps> = React.memo(
             <span className="flex items-center gap-1"><Icon name="warning" className="text-xs" /> Double-booked</span>
           </div>
         )}
+        {assignment.isSpecialEvent ? (
+          <div className="mt-2">
+            <button
+              type="button"
+              onClick={() => onOpenSpecialWeek?.(assignment)}
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-300 dark:border-amber-800 hover:bg-amber-200 transition-all cursor-pointer shadow-2xs"
+              title="Configure Special Week"
+            >
+              <Icon name="event" className="text-xs" />
+              <span className="line-clamp-1">{assignment.specialEventTitle || 'Special Event'}</span>
+            </button>
+          </div>
+        ) : (
+          onOpenSpecialWeek && (
+            <div className="mt-2">
+              <button
+                type="button"
+                onClick={() => onOpenSpecialWeek(assignment)}
+                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 bg-slate-100/70 hover:bg-slate-200/80 dark:bg-zinc-800/60 dark:hover:bg-zinc-700/80 border border-slate-200 dark:border-zinc-700 transition-all cursor-pointer shadow-2xs"
+                title="Configure Special Week"
+              >
+                <Icon name="event" className="text-xs" />
+                <span>Special Week</span>
+              </button>
+            </div>
+          )
+        )}
         {onCopyBrotherNames && (
           <div className="mt-3 pt-1">
             <button
@@ -123,7 +157,44 @@ export const ScheduleDesktopRow: React.FC<ScheduleDesktopRowProps> = React.memo(
         )}
       </td>
 
-      {/* Chairman */}
+      {isMeetingSuspended ? (
+        <td colSpan={visibleDutyCount || 1} className="px-4 py-4 align-middle">
+          <div className="p-4 rounded-xl border border-amber-200 dark:border-amber-900/50 bg-amber-50/70 dark:bg-amber-950/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-xl bg-amber-500/15 text-amber-700 dark:text-amber-400">
+                <Icon name="event" className="text-2xl" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-black text-amber-900 dark:text-amber-200 tracking-tight">
+                    {assignment.specialEventTitle || 'Special Event'}
+                  </span>
+                  {assignment.specialEventType && (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-200/80 text-amber-900 dark:bg-amber-900/60 dark:text-amber-200 uppercase">
+                      {assignment.specialEventType.replace('_', ' ')}
+                    </span>
+                  )}
+                </div>
+                <div className="text-xs font-semibold text-amber-800/80 dark:text-amber-300/80 mt-0.5">
+                  No Meeting at Kingdom Hall (Duties Suspended)
+                </div>
+              </div>
+            </div>
+            {onOpenSpecialWeek && (
+              <button
+                type="button"
+                onClick={() => onOpenSpecialWeek(assignment)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-amber-800 dark:text-amber-200 bg-amber-100 hover:bg-amber-200 dark:bg-amber-900/40 dark:hover:bg-amber-900/60 border border-amber-300 dark:border-amber-800 transition-all cursor-pointer self-start sm:self-center"
+              >
+                <Icon name="edit" className="text-sm" />
+                <span>Edit Special Week</span>
+              </button>
+            )}
+          </div>
+        </td>
+      ) : (
+        <>
+          {/* Chairman */}
       {isRoleInFilter('chairman') && visibleRoles.includes('chairman') && (
         <td className="px-3 py-3 align-top">
           <CustomSelect
@@ -264,6 +335,8 @@ export const ScheduleDesktopRow: React.FC<ScheduleDesktopRowProps> = React.memo(
             placeholder="Mic 2..."
           />
         </td>
+      )}
+        </>
       )}
 
       {/* Actions Column */}

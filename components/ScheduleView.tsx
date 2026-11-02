@@ -19,6 +19,8 @@ import { MonthNavigationControl } from './schedule/MonthNavigationControl';
 import { ScheduleHeroCard } from './schedule/ScheduleHeroCard';
 import { ScheduleDesktopRow } from './schedule/ScheduleDesktopRow';
 import { ScheduleMobileCard } from './schedule/ScheduleMobileCard';
+import { SpecialWeekModal } from './schedule/SpecialWeekModal';
+import { setAssignmentSpecialEvent, revertAssignmentSpecialEvent } from '../domain/specialWeekHelper';
 
 export { ALL_DASHBOARD_ROLES };
 
@@ -59,6 +61,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
   const [isAddingGuest, setIsAddingGuest] = useState(false);
   const [guestTargetId, setGuestTargetId] = useState<string | null>(null);
   const [newGuest, setNewGuest] = useState({ name: '', congregation: '', hostId: '', outlineId: 0, customTalkTitle: '' });
+  const [specialWeekTarget, setSpecialWeekTarget] = useState<Assignment | null>(null);
 
   // Animation States
   const [filledIds, setFilledIds] = useState<string[]>([]);
@@ -336,6 +339,35 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
     setGuestTargetId(null);
   }, [newGuest, guestTargetId, coordinator]);
 
+  const handleOpenSpecialWeek = useCallback((assignment: Assignment) => {
+    setSpecialWeekTarget(assignment);
+  }, []);
+
+  const handleSaveSpecialWeek = useCallback((options: {
+    isSpecialEvent: boolean;
+    specialEventType?: any;
+    specialEventTitle?: string;
+    noMeeting?: boolean;
+    customTalkTitle?: string;
+  }) => {
+    if (!specialWeekTarget) return;
+    const updated = setAssignmentSpecialEvent(specialWeekTarget, options);
+    updateAssignments(assignments.map(a => a.id === updated.id ? updated : a));
+    showToast(
+      options.isSpecialEvent
+        ? `Marked ${new Date(specialWeekTarget.date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} as ${options.specialEventTitle || 'Special Week'}`
+        : 'Reverted to regular meeting',
+      'success'
+    );
+  }, [specialWeekTarget, assignments, updateAssignments]);
+
+  const handleRevertSpecialWeek = useCallback(() => {
+    if (!specialWeekTarget) return;
+    const reverted = revertAssignmentSpecialEvent(specialWeekTarget);
+    updateAssignments(assignments.map(a => a.id === reverted.id ? reverted : a));
+    showToast('Reverted to regular meeting and restored duties', 'success');
+  }, [specialWeekTarget, assignments, updateAssignments]);
+
   const isRoleInFilter = (roleKey: string) => {
     if (roleFilter === 'all') return true;
     if (roleFilter === 'presiding') return roleKey === 'chairman';
@@ -560,6 +592,18 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
         </DialogFooter>
       </Dialog>
 
+      {/* Special Week Modal */}
+      {specialWeekTarget && (
+        <SpecialWeekModal
+          isOpen={Boolean(specialWeekTarget)}
+          assignment={specialWeekTarget}
+          languageMode={settings.languageMode}
+          onClose={() => setSpecialWeekTarget(null)}
+          onSave={handleSaveSpecialWeek}
+          onRevert={handleRevertSpecialWeek}
+        />
+      )}
+
       {/* Dark Hero Action Card */}
       <ScheduleHeroCard
         viewDate={viewDate}
@@ -627,6 +671,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
                 onSpeakerLockToggle={toggleSpeakerLock}
                 onAddGuest={openGuestModal}
                 onCopyNames={handleCopyBrotherNames}
+                onOpenSpecialWeek={handleOpenSpecialWeek}
               />
             );
           })}
@@ -683,6 +728,7 @@ export const ScheduleView: React.FC<ScheduleViewProps> = ({
                       onSpeakerLockToggle={toggleSpeakerLock}
                       onAddGuest={openGuestModal}
                       onCopyBrotherNames={handleCopyBrotherNames}
+                      onOpenSpecialWeek={handleOpenSpecialWeek}
                     />
                   );
                 })}

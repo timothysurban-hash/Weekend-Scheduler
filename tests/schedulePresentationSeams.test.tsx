@@ -57,6 +57,43 @@ describe('Schedule Presentation Seams (TDD)', () => {
       expect(html).toContain('James Smith');
       expect(html).toContain('THIS WEEK');
     });
+
+    it('renders merged banner row when assignment is a No Meeting special week', () => {
+      const specialAssignment: Assignment = {
+        id: 'test-sa',
+        date: '2026-11-22',
+        speakerId: null,
+        outlineId: null,
+        locked: false,
+        isSpecialEvent: true,
+        specialEventType: 'circuit_assembly',
+        specialEventTitle: 'Circuit Assembly with Circuit Overseer',
+        noMeeting: true,
+      };
+
+      const html = renderToString(
+        <table>
+          <tbody>
+            <ScheduleDesktopRow
+              assignment={specialAssignment}
+              speakers={[]}
+              outlines={INITIAL_OUTLINES}
+              visibleRoles={['chairman', 'conductor', 'reader', 'speaker', 'attendants', 'mic']}
+              isThisWeek={false}
+              onAssignmentChange={() => {}}
+              onSpeakerChange={() => {}}
+              onLockToggle={() => {}}
+              onSpeakerLockToggle={() => {}}
+              onAddGuest={() => {}}
+              onOpenSpecialWeek={() => {}}
+            />
+          </tbody>
+        </table>
+      );
+
+      expect(html).toContain('Circuit Assembly with Circuit Overseer');
+      expect(html).toContain('No Meeting at Kingdom Hall');
+    });
   });
 
   describe('ScheduleMobileCard', () => {
