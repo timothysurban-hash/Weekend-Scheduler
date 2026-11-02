@@ -244,7 +244,6 @@ describe('PrintScheduleModal Component (TDD)', () => {
     expect(html).toContain('Regional Convention');
     expect(html).toContain('Walang Pulong sa Kingdom Hall');
     expect(html).toContain('border-2 border-[#2A080D]');
-    expect(html).toContain('text-amber-200');
   });
 });
 

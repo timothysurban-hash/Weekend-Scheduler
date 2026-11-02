@@ -460,11 +460,11 @@ export const PrintScheduleModal: React.FC<PrintScheduleModalProps> = ({
 
                     {/* Duty Table or Special Event Notice */}
                     {isNoMeetingSpecialEvent ? (
-                      <div className="py-7 sm:py-8 px-4 text-center bg-[#2A080D] border-t border-white/25 flex flex-col items-center justify-center space-y-1.5 [print-color-adjust:exact] [-webkit-print-color-adjust:exact]">
-                        <div className="text-[17px] sm:text-[19px] font-black uppercase tracking-wider text-white leading-tight">
+                      <div className="py-7 sm:py-8 px-4 text-center bg-[#FAF6F5] border-t-2 border-[#2A080D] flex flex-col items-center justify-center space-y-1.5 [print-color-adjust:exact]">
+                        <div className="text-[17px] sm:text-[19px] font-black uppercase tracking-wider text-[#2A080D] leading-tight">
                           {assignment.specialEventTitle || 'Special Event / Assembly'}
                         </div>
-                        <div className="text-[12px] sm:text-[13px] font-bold text-amber-200 uppercase tracking-widest">
+                        <div className="text-[12px] sm:text-[13px] font-bold text-slate-600 uppercase tracking-widest">
                           {settings.languageMode === 'tagalog'
                             ? 'Walang Pulong sa Kingdom Hall'
                             : settings.languageMode === 'both'
