@@ -442,11 +442,16 @@ export const PrintScheduleModal: React.FC<PrintScheduleModalProps> = ({
 
                 const mic1 = assignment.micServerIds?.[0] ? getBrotherName(assignment.micServerIds[0]) : '';
                 const mic2 = assignment.micServerIds?.[1] ? getBrotherName(assignment.micServerIds[1]) : '';
+                const isNoMeetingSpecialEvent = Boolean(assignment.isSpecialEvent && (assignment.noMeeting ?? true));
 
                 return (
                   <div
                     key={assignment.id}
-                    className="border-[1.5px] border-[#EEDCDA] break-inside-avoid page-break-inside-avoid bg-white [print-color-adjust:exact] [-webkit-print-color-adjust:exact]"
+                    className={`break-inside-avoid page-break-inside-avoid bg-white [print-color-adjust:exact] [-webkit-print-color-adjust:exact] ${
+                      isNoMeetingSpecialEvent
+                        ? 'border-2 border-[#2A080D]'
+                        : 'border-[1.5px] border-[#EEDCDA]'
+                    }`}
                   >
                     {/* Burgundy Date Header Bar */}
                     <div className="bg-[#2A080D] text-white text-center font-bold uppercase text-[14px] py-0.5 tracking-wider [print-color-adjust:exact] [-webkit-print-color-adjust:exact]">
@@ -454,8 +459,8 @@ export const PrintScheduleModal: React.FC<PrintScheduleModalProps> = ({
                     </div>
 
                     {/* Duty Table or Special Event Notice */}
-                    {assignment.isSpecialEvent && (assignment.noMeeting ?? true) ? (
-                      <div className="py-7 sm:py-8 px-4 text-center bg-[#FAF6F5] border-t-[1.5px] border-[#EEDCDA] flex flex-col items-center justify-center space-y-1.5 [print-color-adjust:exact]">
+                    {isNoMeetingSpecialEvent ? (
+                      <div className="py-7 sm:py-8 px-4 text-center bg-[#FAF6F5] border-t-2 border-[#2A080D] flex flex-col items-center justify-center space-y-1.5 [print-color-adjust:exact]">
                         <div className="text-[17px] sm:text-[19px] font-black uppercase tracking-wider text-[#2A080D] leading-tight">
                           {assignment.specialEventTitle || 'Special Event / Assembly'}
                         </div>
