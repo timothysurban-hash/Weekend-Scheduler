@@ -1,4 +1,4 @@
-﻿import { Assignment, Speaker, AppSettings, DutyRole } from '../types';
+import { Assignment, Speaker, AppSettings, DutyRole } from '../types';
 import { getYearMonth } from '../utils/dateUtils';
 import { isCandidateEligible } from './eligibilityPolicy';
 
@@ -157,7 +157,8 @@ export const autoRotateMonth = (
     const a = workingAssignments[i];
     const { year: aYear, month: aMonth } = getYearMonth(a.date);
 
-    if (aYear === year && aMonth === month && !a.locked && !a.isSpecialEvent) {
+    const isMeetingSuspended = a.isSpecialEvent && (a.noMeeting ?? true);
+    if (aYear === year && aMonth === month && !a.locked && !isMeetingSuspended) {
       const assignedInMeeting = new Set<string>();
 
       // Preserve Public Speaker if set
@@ -221,7 +222,8 @@ export const applyAuthorityRoles = (
   let appliedCount = 0;
   const updatedAssignments = assignments.map(a => {
     const { year: aYear, month: aMonth } = getYearMonth(a.date);
-    if (aYear === year && aMonth === month && !a.locked && !a.isSpecialEvent) {
+    const isMeetingSuspended = a.isSpecialEvent && (a.noMeeting ?? true);
+    if (aYear === year && aMonth === month && !a.locked && !isMeetingSuspended) {
       const updated = { ...a };
       if (conductorId) {
         updated.conductorId = conductorId;

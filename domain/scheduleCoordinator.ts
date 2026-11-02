@@ -218,6 +218,9 @@ export function detectAssignmentConflicts(
   assignment: Assignment,
   speakers: Speaker[]
 ): string[] {
+  if (assignment.isSpecialEvent && (assignment.noMeeting ?? true)) {
+    return [];
+  }
   const assigned: { roleName: string; id: string; isAuditorium: boolean }[] = [];
 
   if (assignment.chairmanId) assigned.push({ roleName: 'Chairman', id: assignment.chairmanId, isAuditorium: false });
