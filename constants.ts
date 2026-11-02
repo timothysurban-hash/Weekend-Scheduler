@@ -1,5 +1,5 @@
 
-import { Outline, Speaker, AppSettings, RoleDefinition } from './types';
+import { Outline, Speaker, AppSettings, RoleDefinition, SpecialEventType } from './types';
 
 export const PRESET_TAGS = ['Elder', 'MS'];
 
@@ -272,3 +272,74 @@ export const DEMO_SPEAKERS: Speaker[] = [
   { id: 'sp-27', name: 'Jaballa, Ricarte', congregation: 'Green Heights', isGuest: false, unavailableDates: [], lastAssigned: null, sortOrder: 26, spiritualStatus: 'publisher', qualifications: ['attendant_entrance', 'attendant_auditorium', 'mic'] },
   { id: 'sp-28', name: 'Nuqui, Reden', congregation: 'Green Heights', isGuest: false, unavailableDates: [], lastAssigned: null, sortOrder: 27, spiritualStatus: 'publisher', qualifications: ['attendant_entrance', 'attendant_auditorium', 'mic'] }
 ];
+
+export interface SpecialEventPresetConfig {
+  key: SpecialEventType;
+  englishTitle: string;
+  tagalogTitle: string;
+  defaultNoMeeting: boolean;
+}
+
+export const SPECIAL_EVENT_PRESETS: SpecialEventPresetConfig[] = [
+  {
+    key: 'circuit_assembly',
+    englishTitle: 'Circuit Assembly',
+    tagalogTitle: 'Sirkito Asembliya',
+    defaultNoMeeting: true,
+  },
+  {
+    key: 'regional_convention',
+    englishTitle: 'Regional Convention',
+    tagalogTitle: 'Rehiyonal na Kombensiyon',
+    defaultNoMeeting: true,
+  },
+  {
+    key: 'circuit_overseer_visit',
+    englishTitle: 'Circuit Overseer Visit',
+    tagalogTitle: 'Dalaw ng Tagapangasiwa ng Sirkito',
+    defaultNoMeeting: false,
+  },
+  {
+    key: 'memorial',
+    englishTitle: 'Memorial',
+    tagalogTitle: 'Memoryal',
+    defaultNoMeeting: false,
+  },
+  {
+    key: 'special_talk',
+    englishTitle: 'Special Talk',
+    tagalogTitle: 'Espesyal na Pahayag',
+    defaultNoMeeting: false,
+  },
+  {
+    key: 'custom',
+    englishTitle: 'Custom Event',
+    tagalogTitle: 'Natatanging Kaganapan',
+    defaultNoMeeting: false,
+  },
+];
+
+export const getSpecialEventPresetDetails = (
+  type: SpecialEventType,
+  languageMode: 'english' | 'tagalog' | 'both' = 'english'
+): { title: string; noMeetingBanner: string } => {
+  const preset = SPECIAL_EVENT_PRESETS.find(p => p.key === type);
+  const englishTitle = preset?.englishTitle || 'Special Event';
+  const tagalogTitle = preset?.tagalogTitle || 'Natatanging Kaganapan';
+
+  let title = englishTitle;
+  if (languageMode === 'tagalog') {
+    title = tagalogTitle;
+  } else if (languageMode === 'both') {
+    title = `${englishTitle} / ${tagalogTitle}`;
+  }
+
+  let noMeetingBanner = "No Meeting at Kingdom Hall";
+  if (languageMode === 'tagalog') {
+    noMeetingBanner = "Walang Pulong sa Kingdom Hall";
+  } else if (languageMode === 'both') {
+    noMeetingBanner = "Walang Pulong sa Kingdom Hall • No Meeting at Kingdom Hall";
+  }
+
+  return { title, noMeetingBanner };
+};

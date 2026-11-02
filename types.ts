@@ -18,6 +18,27 @@ export type DutyRole =
 
 export type SpiritualStatus = 'elder' | 'ms' | 'publisher' | 'up';
 
+export type SpecialEventType = 
+  | 'circuit_assembly'
+  | 'regional_convention'
+  | 'circuit_overseer_visit'
+  | 'memorial'
+  | 'special_talk'
+  | 'custom';
+
+export interface SuspendedDuties {
+  speakerId?: string | null;
+  outlineId?: number | null;
+  customTalkTitle?: string;
+  chairmanId?: string | null;
+  conductorId?: string | null;
+  readerId?: string | null;
+  entranceAttendantId?: string | null;
+  auditoriumAttendantId?: string | null;
+  micServerIds?: string[];
+  customDutyAssignments?: Record<string, string[]>;
+}
+
 export type RoleCategory = 'meeting_conduct' | 'attendants' | 'audio_video' | 'custom';
 
 export interface RoleDefinition {
@@ -64,7 +85,10 @@ export interface Assignment {
   readerId?: string | null;
   micServerIds?: string[]; // Array of 1 or 2 brother IDs
   isSpecialEvent?: boolean; // Assembly / Convention flag
+  specialEventType?: SpecialEventType;
   specialEventTitle?: string;
+  noMeeting?: boolean;
+  suspendedDuties?: SuspendedDuties;
   locked: boolean;
   speakerLocked?: boolean;
   note?: string;
